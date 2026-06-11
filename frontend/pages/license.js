@@ -34,7 +34,7 @@ export default function License() {
 
           <div className="prose prose-lg max-w-none">
             <p className="text-gray-600 mb-6">
-              Copyright (c) 2024 EduShare Sierra Leone
+              Copyright (c) 2026 EduShare Sierra Leone
             </p>
 
             <p className="text-gray-600 mb-4">

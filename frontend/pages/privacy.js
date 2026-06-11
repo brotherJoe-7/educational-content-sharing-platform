@@ -34,7 +34,7 @@ export default function Privacy() {
 
           <div className="prose prose-lg max-w-none">
             <p className="text-gray-600 mb-6">
-              Last updated: January 2024
+              Last updated: January 2026
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">1. Introduction</h2>
