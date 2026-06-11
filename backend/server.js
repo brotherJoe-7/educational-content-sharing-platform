@@ -14,6 +14,7 @@ app.use(helmet());
 // Strict CORS policy
 const allowedOrigins = [
   "https://educational-content-sharing-platform.vercel.app",
+  "https://educational-content-sharing-platfor.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3000",
