@@ -18,9 +18,17 @@ const buildCloudinaryUrl = (resource) => {
     resource_type: resourceType,
     secure: true
   };
+  // Sign raw/document URLs for authorized admin access
+  if (resourceType === 'raw' || ['PDF', 'DOC', 'DOCX', 'PPT', 'PPTX', 'TXT'].includes(resource.fileType)) {
+    options.sign_url = true;
+    options.type = 'authenticated';
+  }
   if (format) options.format = format.toLowerCase();
 
   try {
+    if (options.sign_url) {
+      return cloudinary.utils.private_download_url(resource.cloudinaryPublicId, { resource_type: resourceType, format: options.format });
+    }
     return cloudinary.url(resource.cloudinaryPublicId, options);
   } catch (error) {
     console.error('Cloudinary URL build failed:', error);

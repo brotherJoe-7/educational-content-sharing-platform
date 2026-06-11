@@ -18,9 +18,19 @@ const buildCloudinaryUrl = (resource) => {
     resource_type: resourceType,
     secure: true
   };
+  // Use signed URLs for raw/document files to allow authorized access
+  if (resourceType === 'raw' || ['PDF', 'DOC', 'DOCX', 'PPT', 'PPTX', 'TXT'].includes(resource.fileType)) {
+    options.sign_url = true;
+    options.type = 'authenticated';
+  }
+
   if (format) options.format = format.toLowerCase();
 
   try {
+    if (options.sign_url) {
+      // Use private download URL helper for signed access to protected assets
+      return cloudinary.utils.private_download_url(resource.cloudinaryPublicId, { resource_type: resourceType, format: options.format });
+    }
     return cloudinary.url(resource.cloudinaryPublicId, options);
   } catch (error) {
     console.error('Cloudinary URL build failed:', error);
@@ -230,16 +240,67 @@ router.get('/:id/download', async (req, res) => {
     resource.downloadCount += 1;
     await resource.save();
 
-    // Return download URL instead of redirecting
-    // This allows frontend to track and handle downloads properly
+    // Return a proxy download URL (server will stream the file)
+    const proxyUrl = `${req.protocol}://${req.get('host')}/api/resources/${resource._id}/download/proxy`;
     res.json({
       success: true,
-      downloadUrl: buildCloudinaryUrl(resource),
+      downloadUrl: proxyUrl,
       fileName: resource.fileName
     });
   } catch (error) {
     console.error('Download error:', error);
     res.status(500).json({ message: 'Server error during download' });
+  }
+});
+
+// Proxy download endpoint: streams file from Cloudinary via server (uses API credentials)
+router.get('/:id/download/proxy', async (req, res) => {
+  try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: 'Invalid resource ID format' });
+    }
+
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) return res.status(404).json({ message: 'Resource not found' });
+    if (resource.status !== 'approved') return res.status(403).json({ message: 'Resource not approved' });
+
+    // Increment download count
+    resource.downloadCount += 1;
+    await resource.save();
+
+    const publicId = resource.cloudinaryPublicId;
+    const format = resource.fileName?.split('.').pop()?.toLowerCase();
+    const resourceType = resource.resourceType || (/\.(jpg|jpeg|png)$/i.test(resource.fileName) ? 'image' : 'raw');
+
+    // Build a private download URL and fetch it with API credentials
+    const downloadUrl = cloudinary.utils.private_download_url(publicId, { resource_type: resourceType, format });
+    const auth = Buffer.from(`${process.env.CLOUDINARY_API_KEY}:${process.env.CLOUDINARY_API_SECRET}`).toString('base64');
+
+    const upstream = await fetch(downloadUrl, { headers: { Authorization: `Basic ${auth}` } });
+    if (!upstream.ok) {
+      const text = await upstream.text().catch(() => '');
+      console.error('Upstream fetch failed', upstream.status, text.substring(0, 200));
+      return res.status(502).json({ message: 'Failed to retrieve file from storage' });
+    }
+
+    // Stream headers
+    const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+    const contentLength = upstream.headers.get('content-length');
+    res.setHeader('Content-Type', contentType);
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+    res.setHeader('Content-Disposition', `attachment; filename="${resource.fileName}"`);
+
+    // Stream body
+    const body = upstream.body;
+    if (body && typeof body.pipe === 'function') {
+      body.pipe(res);
+    } else {
+      const buffer = await upstream.arrayBuffer();
+      res.send(Buffer.from(buffer));
+    }
+  } catch (error) {
+    console.error('Proxy download error:', error);
+    res.status(500).json({ message: 'Server error during proxy download' });
   }
 });
 
