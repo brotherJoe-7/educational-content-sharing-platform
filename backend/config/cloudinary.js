@@ -16,11 +16,14 @@ const storage = new CloudinaryStorage({
     const isImage = file.mimetype.startsWith('image/');
     const resourceType = isImage ? 'image' : 'raw';
     
+    const baseName = file.originalname.split('.').slice(0, -1).join('.');
+    const safeBaseName = baseName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+
     return {
       folder: 'edu-content-platform',
       resource_type: resourceType,
       allowed_formats: isImage ? ['jpg', 'jpeg', 'png'] : ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'],
-      public_id: `${Date.now()}-${Math.round(Math.random() * 1E9)}-${file.originalname.split('.')[0]}`
+      public_id: `${Date.now()}-${Math.round(Math.random() * 1E9)}-${safeBaseName}`
     };
   }
 });

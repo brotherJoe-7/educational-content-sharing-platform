@@ -3,8 +3,30 @@ const { body, validationResult } = require('express-validator');
 const Resource = require('../models/Resource');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
+const { cloudinary } = require('../config/cloudinary');
 
 const router = express.Router();
+
+const buildCloudinaryUrl = (resource) => {
+  if (!resource.cloudinaryPublicId) {
+    return resource.fileUrl;
+  }
+
+  const resourceType = resource.resourceType || (['JPG', 'PNG'].includes(resource.fileType) ? 'image' : 'raw');
+  const format = resource.fileName?.split('.').pop();
+  const options = {
+    resource_type: resourceType,
+    secure: true
+  };
+  if (format) options.format = format.toLowerCase();
+
+  try {
+    return cloudinary.url(resource.cloudinaryPublicId, options);
+  } catch (error) {
+    console.error('Cloudinary URL build failed:', error);
+    return resource.fileUrl;
+  }
+};
 
 // Get all pending resources
 router.get('/resources/pending', protect, authorize('admin'), async (req, res) => {
@@ -170,9 +192,8 @@ router.get('/resources/:id/file', protect, authorize('admin'), async (req, res) 
     });
     await resource.save();
 
-    // Redirect to the Cloudinary URL or proxy it
-    // Using redirect for efficiency (Cloudinary handles the file serving)
-    res.redirect(resource.fileUrl);
+    const fileUrl = buildCloudinaryUrl(resource);
+    res.redirect(fileUrl);
   } catch (error) {
     console.error('Get file error:', error);
     res.status(500).json({ success: false, message: 'Server error' });

@@ -7,6 +7,27 @@ const { storage, cloudinary } = require('../config/cloudinary');
 
 const router = express.Router();
 
+const buildCloudinaryUrl = (resource) => {
+  if (!resource.cloudinaryPublicId) {
+    return resource.fileUrl;
+  }
+
+  const resourceType = resource.resourceType || (['JPG', 'PNG'].includes(resource.fileType) ? 'image' : 'raw');
+  const format = resource.fileName?.split('.').pop();
+  const options = {
+    resource_type: resourceType,
+    secure: true
+  };
+  if (format) options.format = format.toLowerCase();
+
+  try {
+    return cloudinary.url(resource.cloudinaryPublicId, options);
+  } catch (error) {
+    console.error('Cloudinary URL build failed:', error);
+    return resource.fileUrl;
+  }
+};
+
 // Configure multer with Cloudinary storage
 const upload = multer({
   storage,
@@ -60,7 +81,10 @@ router.post('/upload', protect, upload.single('file'), [
     else if (req.file.mimetype === 'image/jpeg') fileType = 'JPG';
     else if (req.file.mimetype === 'image/png') fileType = 'PNG';
 
-    // Create resource with Cloudinary URL
+    const cloudinaryResourceType = req.file.resource_type || (req.file.mimetype.startsWith('image/') ? 'image' : 'raw');
+    const secureUrl = req.file.secure_url || req.file.path;
+
+    // Create resource with Cloudinary metadata
     const resource = await Resource.create({
       title,
       description,
@@ -69,8 +93,9 @@ router.post('/upload', protect, upload.single('file'), [
       author,
       licenseType,
       fileType,
-      fileUrl: req.file.path, // Cloudinary URL
-      cloudinaryPublicId: req.file.filename, // Cloudinary public ID
+      fileUrl: secureUrl,
+      resourceType: cloudinaryResourceType,
+      cloudinaryPublicId: req.file.filename,
       fileName: req.file.originalname,
       fileSize: req.file.size,
       uploadedBy: req.user.id,
@@ -128,15 +153,21 @@ router.get('/', async (req, res) => {
       Resource.countDocuments(filter)
     ]);
 
+    const resourcesWithUrls = resources.map((resource) => {
+      const doc = resource.toObject();
+      doc.fileUrl = buildCloudinaryUrl(resource);
+      return doc;
+    });
+
     const totalPages = Math.ceil(total / limitNum);
 
     res.json({
       success: true,
-      count: resources.length,
+      count: resourcesWithUrls.length,
       total,
       totalPages,
       currentPage: pageNum,
-      resources
+      resources: resourcesWithUrls
     });
   } catch (error) {
     console.error('Get resources error:', error);
@@ -164,9 +195,12 @@ router.get('/:id', async (req, res) => {
       return res.status(403).json({ message: 'Resource not approved' });
     }
 
+    const resourceData = resource.toObject();
+    resourceData.fileUrl = buildCloudinaryUrl(resource);
+
     res.json({
       success: true,
-      resource
+      resource: resourceData
     });
   } catch (error) {
     console.error('Get resource error:', error);
@@ -200,7 +234,7 @@ router.get('/:id/download', async (req, res) => {
     // This allows frontend to track and handle downloads properly
     res.json({
       success: true,
-      downloadUrl: resource.fileUrl,
+      downloadUrl: buildCloudinaryUrl(resource),
       fileName: resource.fileName
     });
   } catch (error) {
