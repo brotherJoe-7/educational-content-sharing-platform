@@ -40,7 +40,7 @@ async function reprocessResource(r){
   try{ meta = await cloudinary.api.resource(publicId, { resource_type: r.resourceType || 'image' }); }catch(e){ console.log('cloudinary.api.resource err', e.message || e); }
   const secureUrl = meta && meta.secure_url ? meta.secure_url : currentUrl;
 
-  // attempt to GET secureUrl with Basic auth (api_key:api_secret) if 401
+  // attempt to GET secureUrl with Basic auth (api_key:api_secret) if possible
   const cfg = cloudinary.config();
   const basicAuth = cfg.api_key && cfg.api_secret ? 'Basic ' + Buffer.from(cfg.api_key+':'+cfg.api_secret).toString('base64') : null;
   let res = await tryFetch(secureUrl, basicAuth ? { Authorization: basicAuth } : {});
@@ -63,9 +63,10 @@ async function reprocessResource(r){
       r.resourceType = 'raw';
       await r.save();
       return {ok:true, reason:'reuploaded', newPublicId: final.public_id};
-    }catch(e){ console.log('upload stream err', e.message || e); }
+    }catch(e){ console.log('upload stream err', e && (e.http_code||e.message) || e); }
   }else{
-    console.log('Could not fetch secureUrl (status', res && res.status, '). Trying direct uploader.upload');
+    console.log('Could not fetch secureUrl (status', res && res.status, '). Trying direct uploader.upload and explicit operations');
+    // 1) try uploader.upload directly
     try{
       const up = await cloudinary.uploader.upload(secureUrl, { resource_type: 'raw' });
       console.log('Uploader.upload success', up.public_id);
@@ -74,7 +75,29 @@ async function reprocessResource(r){
       r.resourceType = 'raw';
       await r.save();
       return {ok:true, reason:'uploaded_direct', newPublicId: up.public_id};
-    }catch(e){ console.log('uploader.upload err', e.message || e); }
+    }catch(e){ console.log('uploader.upload err', e && (e.http_code||e.message) || e); }
+
+    // 2) try explicit to copy/retype the resource (try converting to raw, then to upload)
+    try{
+      const explicitRaw = await cloudinary.uploader.explicit(publicId, { resource_type: 'raw', type: 'upload' });
+      console.log('explicit -> raw success', explicitRaw.public_id);
+      r.cloudinaryPublicId = explicitRaw.public_id;
+      r.fileUrl = explicitRaw.secure_url || explicitRaw.url;
+      r.resourceType = 'raw';
+      await r.save();
+      return {ok:true, reason:'explicit_raw', newPublicId: explicitRaw.public_id};
+    }catch(e){ console.log('explicit raw err', e && (e.http_code||e.message) || e); }
+
+    try{
+      const explicitAuth = await cloudinary.uploader.explicit(publicId, { resource_type: r.resourceType || 'image', type: 'authenticated' });
+      console.log('explicit -> authenticated success', explicitAuth.public_id);
+      // generate private download URL
+      try{
+        const priv = cloudinary.utils.private_download_url(explicitAuth.public_id, { resource_type: explicitAuth.resource_type });
+        console.log('private_download_url', priv);
+      }catch(e){ console.log('private_download_url err', e && (e.http_code||e.message) || e); }
+      return {ok:true, reason:'explicit_authenticated', newPublicId: explicitAuth.public_id};
+    }catch(e){ console.log('explicit authenticated err', e && (e.http_code||e.message) || e); }
   }
 
   // last resort: try create_archive
