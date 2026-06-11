@@ -4,6 +4,28 @@ const Resource = require('../models/Resource');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const { cloudinary } = require('../config/cloudinary');
+const multer = require('multer');
+const { storage } = require('../config/cloudinary');
+
+// Multer using Cloudinary storage for re-uploads
+const reupload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'image/jpeg',
+      'image/png'
+    ];
+    if (allowedTypes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type for reupload'));
+  }
+});
 
 const router = express.Router();
 
@@ -208,6 +230,48 @@ router.get('/resources/:id/file', protect, authorize('admin'), async (req, res) 
   }
 });
 
+// Re-upload resource file (admin) - replaces Cloudinary asset and updates DB
+router.post('/resources/:id/reupload', protect, authorize('admin'), reupload.single('file'), async (req, res) => {
+  try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid resource ID format' });
+    }
+
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) return res.status(404).json({ success: false, message: 'Resource not found' });
+
+    if (!req.file) return res.status(400).json({ success: false, message: 'File is required' });
+
+    // Determine file type
+    let fileType = 'Other';
+    if (req.file.mimetype === 'application/pdf') fileType = 'PDF';
+    else if (req.file.mimetype.includes('word')) fileType = req.file.mimetype.includes('openxml') ? 'DOCX' : 'DOC';
+    else if (req.file.mimetype.includes('powerpoint')) fileType = req.file.mimetype.includes('openxml') ? 'PPTX' : 'PPT';
+    else if (req.file.mimetype === 'text/plain') fileType = 'TXT';
+    else if (req.file.mimetype === 'image/jpeg') fileType = 'JPG';
+    else if (req.file.mimetype === 'image/png') fileType = 'PNG';
+
+    const cloudinaryResourceType = req.file.resource_type || (req.file.mimetype.startsWith('image/') ? 'image' : 'raw');
+    const secureUrl = req.file.secure_url || req.file.path;
+
+    // Update resource
+    resource.cloudinaryPublicId = req.file.filename;
+    resource.fileUrl = secureUrl;
+    resource.fileName = req.file.originalname;
+    resource.fileSize = req.file.size;
+    resource.fileType = fileType;
+    resource.resourceType = cloudinaryResourceType;
+    resource.auditTrail.push({ action: 'reuploaded', performedBy: req.user.id, details: `File reuploaded by admin (${req.user.id})` });
+
+    await resource.save();
+
+    res.json({ success: true, resource });
+  } catch (error) {
+    console.error('Reupload error:', error);
+    res.status(500).json({ success: false, message: 'Server error during reupload' });
+  }
+});
+
 // Promote user to admin
 router.put('/users/:id/promote', protect, authorize('admin'), async (req, res) => {
   try {
@@ -344,3 +408,4 @@ router.get('/stats', protect, authorize('admin'), async (req, res) => {
 });
 
 module.exports = router;
+
