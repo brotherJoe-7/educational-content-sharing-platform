@@ -11,16 +11,46 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// Strict CORS policy for production
+// Strict CORS policy
+const allowedOrigins = [
+  "https://educational-content-sharing-platform.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "https://educonnectsl.org"
+];
+
+// Add process.env.FRONTEND_URL if it exists and isn't in the list
+if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://educonnectsl.org'
-    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
+
+// Root route (fixes "Cannot GET /")
+app.get('/', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Welcome to the Educational Content Sharing Platform API',
+    version: '1.0.0',
+    status: 'active'
+  });
+});
 
 // Rate limiting - tuned for production
 const limiter = rateLimit({
