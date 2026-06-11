@@ -102,8 +102,14 @@ router.get('/', async (req, res) => {
     if (gradeLevel) filter.gradeLevel = gradeLevel;
     if (licenseType) filter.licenseType = licenseType;
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    // Validate and sanitize pagination parameters
+    let pageNum = parseInt(page) || 1;
+    let limitNum = parseInt(limit) || 12;
+    
+    if (pageNum < 1) pageNum = 1;
+    if (limitNum < 1) limitNum = 12;
+    if (limitNum > 100) limitNum = 100; // Cap at 100 to prevent DoS
+    
     const skip = (pageNum - 1) * limitNum;
 
     // Sort options
@@ -141,6 +147,11 @@ router.get('/', async (req, res) => {
 // Get single resource
 router.get('/:id', async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: 'Invalid resource ID format' });
+    }
+
     const resource = await Resource.findById(req.params.id)
       .populate('uploadedBy', 'name email')
       .populate('ratings.user', 'name');
@@ -163,9 +174,14 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Download resource
+// Download resource (protected by backend, tracks downloads)
 router.get('/:id/download', async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: 'Invalid resource ID format' });
+    }
+
     const resource = await Resource.findById(req.params.id);
 
     if (!resource) {
@@ -180,8 +196,13 @@ router.get('/:id/download', async (req, res) => {
     resource.downloadCount += 1;
     await resource.save();
 
-    // Redirect to Cloudinary URL for download
-    res.redirect(resource.fileUrl);
+    // Return download URL instead of redirecting
+    // This allows frontend to track and handle downloads properly
+    res.json({
+      success: true,
+      downloadUrl: resource.fileUrl,
+      fileName: resource.fileName
+    });
   } catch (error) {
     console.error('Download error:', error);
     res.status(500).json({ message: 'Server error during download' });

@@ -8,9 +8,13 @@ const router = express.Router();
 
 // Register
 router.post('/register', [
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('name').trim().notEmpty().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2-100 characters'),
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
+    .withMessage('Password must contain uppercase, lowercase, number, and special character'),
   body('privacyConsent')
     .custom((value) => value === true || value === 'true')
     .withMessage('You must agree to the privacy policy')
@@ -40,7 +44,7 @@ router.post('/register', [
     // Generate token
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
+      process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
 
@@ -88,7 +92,7 @@ router.post('/login', [
     // Generate token
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
+      process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
 

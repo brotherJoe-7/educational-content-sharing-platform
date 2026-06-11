@@ -48,9 +48,19 @@ router.get('/resources/all', protect, authorize('admin'), async (req, res) => {
 // Approve resource
 router.put('/resources/:id/approve', protect, authorize('admin'), async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid resource ID format' });
+    }
+
     const resource = await Resource.findById(req.params.id);
     if (!resource) {
       return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+
+    // Validate state transition (can only approve pending resources)
+    if (resource.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Cannot approve a ${resource.status} resource` });
     }
 
     resource.status = 'approved';
@@ -82,9 +92,19 @@ router.put('/resources/:id/reject', protect, authorize('admin'), [
       return res.status(400).json({ success: false, errors: errors.array() });
     }
 
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid resource ID format' });
+    }
+
     const resource = await Resource.findById(req.params.id);
     if (!resource) {
       return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+
+    // Validate state transition (can only reject pending resources)
+    if (resource.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Cannot reject a ${resource.status} resource` });
     }
 
     resource.status = 'rejected';
@@ -106,10 +126,12 @@ router.put('/resources/:id/reject', protect, authorize('admin'), [
   }
 });
 
-// Get all users
+// Get all users (admin only) - restrict sensitive data
 router.get('/users', protect, authorize('admin'), async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const users = await User.find()
+      .select('-password -privacyConsent')
+      .sort({ createdAt: -1 });
     
     res.json({
       success: true,
@@ -125,6 +147,11 @@ router.get('/users', protect, authorize('admin'), async (req, res) => {
 // Get file with admin verification and audit trail
 router.get('/resources/:id/file', protect, authorize('admin'), async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid resource ID format' });
+    }
+
     const resource = await Resource.findById(req.params.id);
     if (!resource) {
       return res.status(404).json({ success: false, message: 'Resource not found' });
@@ -155,13 +182,32 @@ router.get('/resources/:id/file', protect, authorize('admin'), async (req, res) 
 // Promote user to admin
 router.put('/users/:id/promote', protect, authorize('admin'), async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID format' });
+    }
+
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Prevent self-promotion
+    if (user._id.toString() === req.user.id) {
+      return res.status(400).json({ success: false, message: 'Cannot promote yourself' });
+    }
+
+    // Prevent re-promoting already admin users
+    if (user.role === 'admin') {
+      return res.status(400).json({ success: false, message: 'User is already an admin' });
+    }
+
+    const previousRole = user.role;
     user.role = 'admin';
     await user.save();
+
+    // Log the promotion action
+    console.log(`[AUDIT] User ${req.user.id} promoted user ${user._id} from ${previousRole} to admin at ${new Date().toISOString()}`);
 
     res.json({
       success: true,

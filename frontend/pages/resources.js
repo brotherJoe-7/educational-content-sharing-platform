@@ -83,18 +83,29 @@ export default function Resources() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/resources/${id}/download`);
       if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = title;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        toast.success('Download started');
+        const data = await response.json();
+        if (data.success && data.downloadUrl) {
+          // Create a temporary anchor element to download the file
+          const link = document.createElement('a');
+          link.href = data.downloadUrl;
+          link.download = data.fileName || title;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success('Download started');
+        } else {
+          toast.error('Download failed: Invalid response');
+        }
+      } else {
+        if (response.status === 403) {
+          toast.error('This resource is not available for download');
+        } else {
+          toast.error('Download failed');
+        }
       }
     } catch (error) {
+      console.error('Download error:', error);
       toast.error('Download failed');
     }
   };

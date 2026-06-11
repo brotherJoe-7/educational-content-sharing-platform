@@ -80,6 +80,11 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
 // Get single report (admin only)
 router.get('/:id', protect, authorize('admin'), async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: 'Invalid report ID format' });
+    }
+
     const report = await Report.findById(req.params.id)
       .populate('resource')
       .populate('reportedBy', 'name email')
@@ -108,6 +113,11 @@ router.put('/:id/review', protect, authorize('admin'), [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+
+    // Validate ObjectId format
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: 'Invalid report ID format' });
     }
 
     const report = await Report.findById(req.params.id);

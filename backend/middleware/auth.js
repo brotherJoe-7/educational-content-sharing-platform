@@ -1,6 +1,12 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// Validate that JWT_SECRET is set
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set');
+  process.exit(1);
+}
+
 exports.protect = async (req, res, next) => {
   try {
     let token;
@@ -13,7 +19,12 @@ exports.protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Not authorized to access this route' });
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production');
+    // Validate token format (basic check)
+    if (token.split('.').length !== 3) {
+      return res.status(401).json({ message: 'Invalid token format' });
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     req.user = await User.findById(decoded.id);
     

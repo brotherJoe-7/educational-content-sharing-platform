@@ -8,6 +8,14 @@ router.get('/', async (req, res) => {
   try {
     const { keyword, subject, gradeLevel, licenseType, sortBy, page = 1, limit = 12 } = req.query;
     
+    // Validate and sanitize pagination parameters
+    let pageNum = parseInt(page) || 1;
+    let limitNum = parseInt(limit) || 12;
+    
+    if (pageNum < 1) pageNum = 1;
+    if (limitNum < 1) limitNum = 12;
+    if (limitNum > 100) limitNum = 100; // Cap at 100 to prevent DoS
+    
     const filter = { status: 'approved' };
     
     if (subject) filter.subject = subject;
@@ -15,10 +23,12 @@ router.get('/', async (req, res) => {
     if (licenseType) filter.licenseType = licenseType;
     
     if (keyword) {
+      // Escape special regex characters to prevent ReDoS
+      const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { title: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } },
-        { author: { $regex: keyword, $options: 'i' } }
+        { title: { $regex: escapedKeyword, $options: 'i' } },
+        { description: { $regex: escapedKeyword, $options: 'i' } },
+        { author: { $regex: escapedKeyword, $options: 'i' } }
       ];
     }
 
@@ -27,8 +37,6 @@ router.get('/', async (req, res) => {
     if (sortBy === 'downloads') sortOption = { downloadCount: -1 };
     if (sortBy === 'title') sortOption = { title: 1 };
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
 
     const [resources, total] = await Promise.all([
