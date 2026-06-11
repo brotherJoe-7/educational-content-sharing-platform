@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { Upload, ArrowLeft, BookOpen, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Upload as UploadIcon, ArrowLeft, BookOpen, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Upload() {
@@ -90,8 +90,13 @@ export default function Upload() {
     }
   };
 
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+    }
+  }, [user, router]);
+
   if (!user) {
-    router.push('/login');
     return null;
   }
 
@@ -172,7 +177,7 @@ export default function Upload() {
               ) : (
                 <div className="flex flex-col items-center">
                   <div className="bg-blue-100 p-4 rounded-full mb-4">
-                    <Upload className="h-8 w-8 text-blue-600" />
+                    <UploadIcon className="h-8 w-8 text-blue-600" />
                   </div>
                   <p className="text-lg font-semibold text-gray-900 mb-2">
                     Drag and drop your file here
@@ -340,7 +345,7 @@ export default function Upload() {
                 </>
               ) : (
                 <>
-                  <Upload className="h-5 w-5" />
+                  <UploadIcon className="h-5 w-5" />
                   <span>Upload Resource</span>
                 </>
               )}
