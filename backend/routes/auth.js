@@ -11,12 +11,14 @@ router.post('/register', [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('privacyConsent').equals('true').withMessage('Privacy consent is required')
+  body('privacyConsent')
+    .custom((value) => value === true || value === 'true')
+    .withMessage('You must agree to the privacy policy')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ message: errors.array()[0].msg });
     }
 
     const { name, email, password, privacyConsent } = req.body;
