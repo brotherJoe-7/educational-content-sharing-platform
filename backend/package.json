@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "reprocess-resources": "node scripts/reprocess_resources.js"
   },
   "keywords": [
     "education",
