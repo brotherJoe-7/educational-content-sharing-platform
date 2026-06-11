@@ -122,6 +122,36 @@ router.get('/users', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+// Get file with admin verification and audit trail
+router.get('/resources/:id/file', protect, authorize('admin'), async (req, res) => {
+  try {
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+
+    // Only allow viewing of non-rejected resources
+    if (resource.status === 'rejected') {
+      return res.status(403).json({ success: false, message: 'Cannot access rejected resource file' });
+    }
+
+    // Log file access in audit trail
+    resource.auditTrail.push({
+      action: 'file_accessed',
+      performedBy: req.user.id,
+      details: `File viewed by admin (${resource.fileName})`
+    });
+    await resource.save();
+
+    // Redirect to the Cloudinary URL or proxy it
+    // Using redirect for efficiency (Cloudinary handles the file serving)
+    res.redirect(resource.fileUrl);
+  } catch (error) {
+    console.error('Get file error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Promote user to admin
 router.put('/users/:id/promote', protect, authorize('admin'), async (req, res) => {
   try {

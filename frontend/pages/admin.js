@@ -420,15 +420,16 @@ export default function Admin() {
                       </div>
                       
                       <div className="flex flex-wrap gap-2 sm:gap-3 shrink-0 border-t border-gray-100 pt-3 sm:pt-4">
-                        <a 
-                          href={resource.fileUrl} 
-                          target="_blank" 
-                          rel="noreferrer"
+                        <button
+                          onClick={() => {
+                            const token = localStorage.getItem('token');
+                            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resource._id}/file`;
+                          }}
                           className="flex-1 sm:flex-none btn-outline flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium"
                         >
                           <Download className="h-4 w-4" />
                           <span>View File</span>
-                        </a>
+                        </button>
                         <button
                           onClick={() => handleApprove(resource._id)}
                           className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
