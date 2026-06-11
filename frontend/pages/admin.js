@@ -460,9 +460,19 @@ export default function Admin() {
                       
                       <div className="flex flex-wrap gap-2 sm:gap-3 shrink-0 border-t border-gray-100 pt-3 sm:pt-4">
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             const token = localStorage.getItem('token');
-                            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resource._id}/file`;
+                            try {
+                              const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resource._id}/file/url`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                              });
+                              const d = await r.json();
+                              if (d.success && d.fileUrl) window.open(d.fileUrl, '_blank');
+                              else toast.error(d.message || 'Failed to get file URL');
+                            } catch (e) {
+                              console.error('Open file error', e);
+                              toast.error('Failed to open file');
+                            }
                           }}
                           className="flex-1 sm:flex-none btn-outline flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium"
                         >
