@@ -40,6 +40,12 @@ const resourceSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a file URL']
   },
+  resourceType: {
+    type: String,
+    enum: ['image', 'raw'],
+    required: false,
+    default: 'raw'
+  },
   cloudinaryPublicId: {
     type: String,
     required: false
