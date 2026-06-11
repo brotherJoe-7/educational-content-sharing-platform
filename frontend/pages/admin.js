@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { 
   Check, X, BookOpen, Users, Clock, TrendingUp, LogOut, 
   LayoutDashboard, FileText, Shield, BarChart3, Download,
-  Star, Menu, X as Close, Search, Filter, Home, ArrowRight, User as UserIcon
+  Star, Menu, X as Close, Search, Filter, Home, ArrowRight, User as UserIcon, Upload
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
