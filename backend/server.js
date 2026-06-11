@@ -11,6 +11,23 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
+// Performance monitoring middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logMessage = `${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`;
+    if (res.statusCode >= 400) {
+      logger.error(`[API Error] ${logMessage}`);
+    } else if (duration > 1000) {
+      logger.warn(`[Slow API] ${logMessage}`); // Alert on slow queries > 1s
+    } else {
+      logger.info(`[API Trace] ${logMessage}`);
+    }
+  });
+  next();
+});
+
 // Strict CORS policy
 const allowedOrigins = [
   "https://educational-content-sharing-platform.vercel.app",
