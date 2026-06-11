@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { 
   Check, X, BookOpen, Users, Clock, TrendingUp, LogOut, 
   LayoutDashboard, FileText, Shield, BarChart3, Download,
-  Star, Menu, X as Close, ChevronRight, Search, Filter
+  Star, Menu, X as Close, Search, Filter, Home, ArrowRight, User as UserIcon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -136,184 +136,166 @@ export default function Admin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center font-sans">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-lg">Loading admin dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading Dashboard...</p>
         </div>
       </div>
     );
   }
 
   const sidebarItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'pending', icon: Clock, label: 'Pending Review', count: pendingResources.length },
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
+    { id: 'pending', icon: Clock, label: 'Pending Reviews', count: pendingResources.length },
     { id: 'resources', icon: FileText, label: 'All Resources' },
     { id: 'users', icon: Users, label: 'User Management' },
   ];
 
-  const StatCard = ({ title, value, icon: Icon, color }) => (
-    <div className={`${color} rounded-2xl p-6 text-white shadow-lg transform hover:scale-105 transition-transform duration-200`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-white/80 text-sm font-medium">{title}</p>
-          <p className="text-3xl font-bold mt-1">{value}</p>
-        </div>
-        <div className="bg-white/20 p-3 rounded-xl">
-          <Icon className="h-6 w-6" />
-        </div>
+  const StatCard = ({ title, value, icon: Icon, colorClass }) => (
+    <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow">
+      <div>
+        <p className="text-gray-500 text-sm font-medium mb-1 uppercase tracking-wide">{title}</p>
+        <p className="text-3xl font-extrabold text-gray-900">{value}</p>
+      </div>
+      <div className={`p-3 rounded-lg ${colorClass}`}>
+        <Icon className="h-6 w-6" />
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .btn-blue { background: #2563eb; transition: background 0.15s; color: white; }
+        .btn-blue:hover { background: #1d4ed8; }
+        .btn-outline { border: 1px solid #e5e7eb; color: #374151; transition: all 0.15s; background: white; }
+        .btn-outline:hover { border-color: #d1d5db; background: #f9fafb; }
+      `}</style>
+
       {/* Mobile menu button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow-md"
+        className="lg:hidden fixed top-4 left-4 z-50 bg-white border border-gray-200 p-2 rounded-lg shadow-sm text-gray-700"
       >
-        {sidebarOpen ? <Close className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        {sidebarOpen ? <Close className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white shadow-xl transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out`}>
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="p-6 border-b">
-            <Link href="/resources" className="flex items-center space-x-3">
-              <div className="bg-blue-600 p-2 rounded-xl">
-                <BookOpen className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-800">EduShare Admin</span>
-            </Link>
-          </div>
+      <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col`}>
+        {/* Logo */}
+        <div className="p-6 border-b border-gray-800">
+          <Link href="/" className="flex items-center space-x-3">
+            <BookOpen className="h-6 w-6 text-blue-500" />
+            <span className="text-lg font-bold">EduShare Admin</span>
+          </Link>
+        </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
-            {sidebarItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${
-                  activeTab === item.id
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.label}</span>
-                </div>
-                {item.count !== undefined && item.count > 0 && (
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                    activeTab === item.id ? 'bg-white/20' : 'bg-red-100 text-red-600'
-                  }`}>
-                    {item.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-
-          {/* User info */}
-          <div className="p-4 border-t">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                {user?.name?.charAt(0) || 'A'}
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">{user?.name}</p>
-                <p className="text-sm text-gray-500">Administrator</p>
-              </div>
-            </div>
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {sidebarItems.map((item) => (
             <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-sm font-medium ${
+                activeTab === item.id
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`}
             >
-              <LogOut className="h-4 w-4" />
-              <span>Logout</span>
+              <div className="flex items-center space-x-3">
+                <item.icon className={`h-5 w-5 ${activeTab === item.id ? 'text-white' : 'text-gray-400'}`} />
+                <span>{item.label}</span>
+              </div>
+              {item.count !== undefined && item.count > 0 && (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                  activeTab === item.id ? 'bg-white text-blue-600' : 'bg-blue-600 text-white'
+                }`}>
+                  {item.count}
+                </span>
+              )}
             </button>
+          ))}
+        </nav>
+
+        {/* User info */}
+        <div className="p-4 border-t border-gray-800">
+          <div className="flex items-center space-x-3 mb-4 px-2">
+            <div className="w-10 h-10 bg-gray-800 border border-gray-700 rounded-full flex items-center justify-center text-blue-400 font-bold">
+              {user?.name?.charAt(0) || 'A'}
+            </div>
+            <div className="overflow-hidden">
+              <p className="font-medium text-white truncate text-sm">{user?.name}</p>
+              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+            </div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors text-sm font-medium border border-gray-700"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sign Out</span>
+          </button>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-0 overflow-auto">
+      <main className="flex-1 lg:ml-0 overflow-auto w-full">
         {/* Top bar */}
-        <header className="bg-white shadow-sm sticky top-0 z-30">
-          <div className="px-6 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+          <div className="px-6 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="pl-12 lg:pl-0">
+              <h1 className="text-2xl font-bold text-gray-900">
                 {sidebarItems.find(item => item.id === activeTab)?.label}
               </h1>
-              <p className="text-sm text-gray-500">Welcome back, {user?.name}</p>
+              <p className="text-sm text-gray-500 mt-1">Manage platform content and users.</p>
             </div>
-            <Link
-              href="/resources"
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
-            >
-              <BookOpen className="h-4 w-4" />
-              <span>View Site</span>
-            </Link>
+            <div className="flex items-center space-x-3 pl-12 lg:pl-0">
+              <Link
+                href="/resources"
+                className="btn-outline flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>View Site</span>
+              </Link>
+            </div>
           </div>
         </header>
 
         {/* Content area */}
-        <div className="p-6">
+        <div className="p-6 sm:p-8 max-w-7xl mx-auto">
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && stats && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                   title="Total Users"
                   value={stats.totalUsers}
                   icon={Users}
-                  color="bg-blue-600"
+                  colorClass="bg-blue-50 text-blue-600 border border-blue-100"
                 />
                 <StatCard
                   title="Total Resources"
                   value={stats.totalResources}
-                  icon={BookOpen}
-                  color="bg-green-600"
+                  icon={FileText}
+                  colorClass="bg-green-50 text-green-600 border border-green-100"
                 />
                 <StatCard
                   title="Pending Review"
                   value={stats.pendingResources}
                   icon={Clock}
-                  color="bg-yellow-600"
+                  colorClass="bg-yellow-50 text-yellow-600 border border-yellow-100"
                 />
                 <StatCard
                   title="Approved Resources"
                   value={stats.approvedResources}
                   icon={Check}
-                  color="bg-purple-600"
-                />
-              </div>
-
-              {/* Additional Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard
-                  title="Uploads This Week"
-                  value={stats.uploadsLastWeek || 0}
-                  icon={TrendingUp}
-                  color="bg-indigo-600"
-                />
-                <StatCard
-                  title="Total Downloads"
-                  value={stats.totalDownloads || 0}
-                  icon={Download}
-                  color="bg-pink-600"
-                />
-                <StatCard
-                  title="Active Users"
-                  value={stats.activeUsers || 0}
-                  icon={Shield}
-                  color="bg-teal-600"
+                  colorClass="bg-purple-50 text-purple-600 border border-purple-100"
                 />
               </div>
 
@@ -321,22 +303,22 @@ export default function Admin() {
               {analytics && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Resources by Subject */}
-                  <div className="bg-white rounded-2xl shadow-md p-6">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
                       <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
                       Resources by Subject
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {analytics.resourcesBySubject?.slice(0, 5).map((item) => (
                         <div key={item._id}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-600">{item._id}</span>
-                            <span className="font-medium text-gray-800">{item.count}</span>
+                          <div className="flex justify-between text-sm mb-1.5">
+                            <span className="text-gray-700 font-medium">{item._id}</span>
+                            <span className="font-bold text-gray-900">{item.count}</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
                             <div
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${(item.count / stats.totalResources) * 100}%` }}
+                              className="bg-blue-600 h-2.5 rounded-full"
+                              style={{ width: `${Math.max(5, (item.count / stats.totalResources) * 100)}%` }}
                             ></div>
                           </div>
                         </div>
@@ -345,22 +327,22 @@ export default function Admin() {
                   </div>
 
                   {/* Resources by Grade */}
-                  <div className="bg-white rounded-2xl shadow-md p-6">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                      <BarChart3 className="h-5 w-5 mr-2 text-green-600" />
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+                      <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
                       Resources by Grade Level
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {analytics.resourcesByGrade?.slice(0, 5).map((item) => (
                         <div key={item._id}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-600">{item._id}</span>
-                            <span className="font-medium text-gray-800">{item.count}</span>
+                          <div className="flex justify-between text-sm mb-1.5">
+                            <span className="text-gray-700 font-medium">{item._id}</span>
+                            <span className="font-bold text-gray-900">{item.count}</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
                             <div
-                              className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${(item.count / stats.totalResources) * 100}%` }}
+                              className="bg-green-600 h-2.5 rounded-full"
+                              style={{ width: `${Math.max(5, (item.count / stats.totalResources) * 100)}%` }}
                             ></div>
                           </div>
                         </div>
@@ -374,172 +356,200 @@ export default function Admin() {
 
           {/* Pending Resources Tab */}
           {activeTab === 'pending' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {pendingResources.length === 0 ? (
-                <div className="bg-white rounded-2xl shadow-md p-12 text-center">
-                  <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">No Pending Resources</h3>
-                  <p className="text-gray-500">All resources have been reviewed</p>
+                <div className="bg-white border border-gray-200 rounded-xl p-12 text-center shadow-sm">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-50 rounded-full mb-4">
+                    <Check className="h-8 w-8 text-green-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">All Caught Up!</h3>
+                  <p className="text-gray-500 max-w-sm mx-auto">There are no resources pending review at this time.</p>
                 </div>
               ) : (
-                pendingResources.map((resource) => (
-                  <div key={resource._id} className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div className="grid gap-6">
+                  {pendingResources.map((resource) => (
+                    <div key={resource._id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-start justify-between gap-6">
                       <div className="flex-1">
                         <div className="flex items-start space-x-4">
-                          <div className="bg-blue-100 p-3 rounded-xl">
-                            <FileText className="h-6 w-6 text-blue-600" />
+                          <div className="bg-yellow-50 border border-yellow-100 p-3 rounded-lg mt-1 hidden sm:block">
+                            <FileText className="h-6 w-6 text-yellow-600" />
                           </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-gray-800">{resource.title}</h3>
-                            <p className="text-gray-600 mt-1">{resource.description}</p>
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                          <div>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h3 className="text-lg font-bold text-gray-900">{resource.title}</h3>
+                              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">Pending</span>
+                            </div>
+                            <p className="text-gray-600 text-sm mb-4 leading-relaxed max-w-3xl">{resource.description}</p>
+                            
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium border border-gray-200">
                                 {resource.subject}
                               </span>
-                              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                              <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium border border-gray-200">
                                 {resource.gradeLevel}
                               </span>
-                              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                              <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium border border-gray-200 uppercase">
                                 {resource.fileType}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-500 mt-3">
-                              <span className="font-medium">Author:</span> {resource.author}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              <span className="font-medium">Uploaded by:</span> {resource.uploadedBy?.name}
-                            </p>
+                            
+                            <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 gap-2 sm:gap-6">
+                              <div className="flex items-center space-x-1.5">
+                                <UserIcon className="h-4 w-4" />
+                                <span>Author: {resource.author}</span>
+                              </div>
+                              <div className="flex items-center space-x-1.5">
+                                <Upload className="h-4 w-4" />
+                                <span>Uploaded by: {resource.uploadedBy?.name}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="flex lg:flex-col gap-2">
+                      
+                      <div className="flex md:flex-col gap-3 shrink-0 border-t border-gray-100 md:border-t-0 pt-4 md:pt-0">
+                        <a 
+                          href={resource.fileUrl} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="flex-1 md:flex-none btn-outline flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium"
+                        >
+                          <Download className="h-4 w-4" />
+                          <span>View File</span>
+                        </a>
                         <button
                           onClick={() => handleApprove(resource._id)}
-                          className="flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors shadow-md"
+                          className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                         >
-                          <Check className="h-5 w-5" />
+                          <Check className="h-4 w-4" />
                           <span>Approve</span>
                         </button>
                         <button
                           onClick={() => setRejectingId(resource._id)}
-                          className="flex items-center justify-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-md"
+                          className="flex-1 md:flex-none bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                         >
-                          <X className="h-5 w-5" />
+                          <X className="h-4 w-4" />
                           <span>Reject</span>
                         </button>
                       </div>
-                    </div>
-                    {rejectingId === resource._id && (
-                      <div className="mt-4 pt-4 border-t">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Rejection Reason
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Please provide a reason for rejection"
-                          value={rejectReason}
-                          onChange={(e) => setRejectReason(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent mb-3"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleReject(resource._id)}
-                            className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
-                          >
-                            Confirm Rejection
-                          </button>
-                          <button
-                            onClick={() => {
-                              setRejectingId(null);
-                              setRejectReason('');
-                            }}
-                            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
-                          >
-                            Cancel
-                          </button>
+                      
+                      {/* Rejection Form Overlay/Inline */}
+                      {rejectingId === resource._id && (
+                        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-xl p-6 flex flex-col justify-center items-center z-10 border border-gray-200">
+                          <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-200 w-full max-w-md">
+                            <h4 className="font-bold text-gray-900 mb-2">Reject Resource</h4>
+                            <p className="text-sm text-gray-500 mb-4">Please provide a reason for rejecting "{resource.title}". This helps the uploader understand why.</p>
+                            <input
+                              type="text"
+                              placeholder="e.g., Inappropriate content, low quality..."
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none mb-4"
+                              autoFocus
+                            />
+                            <div className="flex gap-3 justify-end">
+                              <button
+                                onClick={() => {
+                                  setRejectingId(null);
+                                  setRejectReason('');
+                                }}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleReject(resource._id)}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                              >
+                                Confirm Rejection
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
 
           {/* All Resources Tab */}
           {activeTab === 'resources' && (
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-              <div className="p-6 border-b">
-                <div className="flex items-center space-x-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search resources..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors">
-                    <Filter className="h-4 w-4" />
-                    <span>Filter</span>
-                  </button>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-12rem)]">
+              <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row gap-4 justify-between items-center shrink-0">
+                <div className="relative w-full sm:max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search resources by title or author..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                  />
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
+              <div className="overflow-x-auto flex-1">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Resource</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Subject</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Grade</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Downloads</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rating</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Resource Details</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject & Grade</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Metrics</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 bg-white">
                     {allResources
-                      .filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()) || r.author.toLowerCase().includes(searchQuery.toLowerCase()))
                       .map((resource) => (
                       <tr key={resource._id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center">
-                            <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                            <div className="bg-blue-50 border border-blue-100 p-2.5 rounded-lg mr-4 shrink-0">
                               <FileText className="h-5 w-5 text-blue-600" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-800">{resource.title}</p>
-                              <p className="text-sm text-gray-500">{resource.author}</p>
+                              <p className="font-bold text-gray-900 line-clamp-1">{resource.title}</p>
+                              <p className="text-sm text-gray-500 mt-0.5">By {resource.author}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                            {resource.subject}
-                          </span>
+                          <div className="flex flex-col items-start gap-1.5">
+                            <span className="px-2.5 py-0.5 bg-gray-100 border border-gray-200 text-gray-700 rounded text-xs font-medium">
+                              {resource.subject}
+                            </span>
+                            <span className="text-xs text-gray-500">{resource.gradeLevel}</span>
+                          </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-600">{resource.gradeLevel}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            resource.status === 'approved' ? 'bg-green-100 text-green-700' :
-                            resource.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                            'bg-yellow-100 text-yellow-700'
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                            resource.status === 'approved' ? 'bg-green-50 text-green-700 border-green-200' :
+                            resource.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                            'bg-yellow-50 text-yellow-700 border-yellow-200'
                           }`}>
-                            {resource.status}
+                            {resource.status === 'approved' && <Check className="w-3 h-3 mr-1" />}
+                            {resource.status === 'rejected' && <X className="w-3 h-3 mr-1" />}
+                            {resource.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
+                            <span className="capitalize">{resource.status}</span>
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-gray-600">{resource.downloadCount}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                            <span className="text-gray-600">{resource.averageRating?.toFixed(1) || 'N/A'}</span>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex flex-col items-end gap-1 text-sm text-gray-600">
+                            <span className="flex items-center"><Download className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> {resource.downloadCount}</span>
+                            <span className="flex items-center"><Star className="w-3.5 h-3.5 mr-1.5 text-yellow-400" /> {resource.averageRating?.toFixed(1) || '-'}</span>
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {allResources.length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                          No resources found.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -548,49 +558,54 @@ export default function Admin() {
 
           {/* Users Tab */}
           {activeTab === 'users' && (
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-              <div className="p-6 border-b">
-                <h3 className="text-lg font-bold text-gray-800">User Management</h3>
-                <p className="text-sm text-gray-500">Manage platform users and permissions</p>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200 bg-gray-50/50 flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">User Management</h3>
+                  <p className="text-sm text-gray-500 mt-1">Manage platform administrators and users.</p>
+                </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                  <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">User Details</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 bg-white">
                     {users.map((userItem) => (
                       <tr key={userItem._id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center">
-                            <div className="bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                              {userItem.name?.charAt(0) || 'U'}
+                            <div className="bg-gray-100 border border-gray-200 w-10 h-10 rounded-full flex items-center justify-center text-gray-600 font-bold mr-4 shrink-0">
+                              {userItem.name?.charAt(0).toUpperCase() || 'U'}
                             </div>
-                            <span className="font-medium text-gray-800">{userItem.name}</span>
+                            <div>
+                              <p className="font-bold text-gray-900">{userItem.name}</p>
+                              <p className="text-sm text-gray-500 mt-0.5">{userItem.email}</p>
+                            </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-600">{userItem.email}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            userItem.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+                          <span className={`inline-flex px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wide border ${
+                            userItem.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-100 text-gray-700 border-gray-200'
                           }`}>
                             {userItem.role}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          {userItem.role !== 'admin' && (
+                        <td className="px-6 py-4 text-right">
+                          {userItem.role !== 'admin' ? (
                             <button
                               onClick={() => handlePromote(userItem._id)}
-                              className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-medium text-sm"
+                              className="inline-flex items-center space-x-1.5 btn-outline px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors"
                             >
                               <Shield className="h-4 w-4" />
-                              <span>Promote to Admin</span>
+                              <span>Make Admin</span>
                             </button>
+                          ) : (
+                            <span className="text-sm text-gray-400 italic">Administrator</span>
                           )}
                         </td>
                       </tr>
@@ -606,7 +621,7 @@ export default function Admin() {
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

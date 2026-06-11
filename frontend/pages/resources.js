@@ -130,8 +130,8 @@ export default function Resources() {
   }
 
   const ResourceCard = ({ resource }) => (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-      <div className="p-6">
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+      <div className="p-5 sm:p-6 flex flex-col h-full">
         <div className="flex items-start justify-between mb-4">
           <span className="px-3 py-1 text-xs font-semibold bg-blue-600 text-white rounded-full">
             {resource.subject}
@@ -166,19 +166,29 @@ export default function Resources() {
             <Download className="h-4 w-4 mr-1" />
             {resource.downloadCount}
           </span>
-        </div>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleDownload(resource._id, resource.fileName)}
-            className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md"
-          >
-            <Download className="h-4 w-4" />
-            <span>Download</span>
-          </button>
+        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+          <div className="flex space-x-2 w-full">
+            <a
+              href={resource.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors border border-blue-100"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span>Read</span>
+            </a>
+            <button
+              onClick={() => handleDownload(resource._id, resource.title)}
+              className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors border border-gray-200"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download</span>
+            </button>
+          </div>
           <button
             onClick={() => handleShare(resource)}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100 shrink-0"
+            title="Share"
           >
             <Share2 className="h-4 w-4" />
           </button>

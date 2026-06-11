@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   BookOpen, Upload, Search, Shield, Users, Download,
-  Star, ArrowRight, CheckCircle, Globe, Zap, FileText
+  Star, ArrowRight, CheckCircle, Globe, Zap, FileText, User, LogOut
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
+  const { user, logout } = useAuth();
   const [stats, setStats] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -112,13 +114,28 @@ export default function Home() {
             </div>
 
             <div className="flex items-center space-x-3">
-              <Link href="/login" className="text-sm font-semibold text-gray-600 hover:text-blue-600 px-3 py-2 transition-colors">
-                Log In
-              </Link>
-              <Link href="/register" className="btn-blue text-white text-sm font-semibold px-5 py-2 rounded-lg inline-flex items-center space-x-1.5">
-                <span>Get Started</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              {user ? (
+                <>
+                  <Link href={user.role === 'admin' ? '/admin' : '/resources'} className="text-sm font-semibold text-gray-600 hover:text-blue-600 px-3 py-2 transition-colors flex items-center space-x-1">
+                    <User className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Link>
+                  <button onClick={logout} className="btn-outline text-sm font-semibold px-4 py-2 rounded-lg inline-flex items-center space-x-1.5">
+                    <LogOut className="h-4 w-4" />
+                    <span>Log Out</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="text-sm font-semibold text-gray-600 hover:text-blue-600 px-3 py-2 transition-colors">
+                    Log In
+                  </Link>
+                  <Link href="/register" className="btn-blue text-white text-sm font-semibold px-5 py-2 rounded-lg inline-flex items-center space-x-1.5">
+                    <span>Get Started</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -142,10 +159,17 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
-            <Link href="/register" className="btn-blue inline-flex items-center justify-center space-x-2 text-white font-semibold px-8 py-3.5 rounded-lg text-base">
-              <Upload className="h-4 w-4" />
-              <span>Start Sharing Free</span>
-            </Link>
+            {user ? (
+               <Link href="/upload" className="btn-blue inline-flex items-center justify-center space-x-2 text-white font-semibold px-8 py-3.5 rounded-lg text-base">
+                 <Upload className="h-4 w-4" />
+                 <span>Upload Resource</span>
+               </Link>
+            ) : (
+               <Link href="/register" className="btn-blue inline-flex items-center justify-center space-x-2 text-white font-semibold px-8 py-3.5 rounded-lg text-base">
+                 <Upload className="h-4 w-4" />
+                 <span>Start Sharing Free</span>
+               </Link>
+            )}
             <Link href="/resources" className="btn-outline inline-flex items-center justify-center space-x-2 font-semibold px-8 py-3.5 rounded-lg text-base">
               <Search className="h-4 w-4" />
               <span>Browse Resources</span>
