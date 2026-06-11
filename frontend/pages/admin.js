@@ -21,6 +21,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectingId, setRejectingId] = useState(null);
+  const [reuploadingId, setReuploadingId] = useState(null);
+  const [reuploadProgress, setReuploadProgress] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -140,6 +142,43 @@ export default function Admin() {
   const handleLogout = () => {
     logout();
     router.push('/');
+  };
+
+  const handleReplaceFile = async (resourceId) => {
+    const token = localStorage.getItem('token');
+    // create file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png';
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      setReuploadingId(resourceId);
+      setReuploadProgress(0);
+      try {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resourceId}/reupload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: form
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast.success('File replaced successfully');
+          fetchData();
+        } else {
+          toast.error(data.message || 'Reupload failed');
+        }
+      } catch (err) {
+        console.error('Reupload error', err);
+        toast.error('Reupload failed');
+      } finally {
+        setReuploadingId(null);
+        setReuploadProgress(0);
+      }
+    };
+    input.click();
   };
 
   if (!user || user.role !== 'admin') {
@@ -443,6 +482,13 @@ export default function Admin() {
                         >
                           <X className="h-4 w-4" />
                           <span>Reject</span>
+                        </button>
+                        <button
+                          onClick={() => handleReplaceFile(resource._id)}
+                          className="flex-1 sm:flex-none btn-outline flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium"
+                        >
+                          <Upload className="h-4 w-4" />
+                          <span>Replace File</span>
                         </button>
                       </div>
                       
