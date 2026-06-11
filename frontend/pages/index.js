@@ -108,7 +108,6 @@ export default function Home() {
             </div>
 
             <div className="hidden md:flex items-center space-x-6">
-              <Link href="/resources" className="nav-link text-sm font-medium text-gray-600">Browse Resources</Link>
             </div>
 
             <div className="flex items-center space-x-3">
