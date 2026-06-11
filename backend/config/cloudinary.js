@@ -8,16 +8,20 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Configure storage for file uploads
+// Configure storage for file uploads with mixed resource types
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'edu-content-platform',
-    allowed_formats: ['pdf', 'doc', 'docx', 'ppt', 'pptx'],
-    public_id: (req, file) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      return `resources/${file.originalname.split('.')[0]}-${uniqueSuffix}`;
-    }
+  params: (req, file) => {
+    // Determine resource type based on MIME type
+    const isImage = file.mimetype.startsWith('image/');
+    const resourceType = isImage ? 'image' : 'raw';
+    
+    return {
+      folder: 'edu-content-platform',
+      resource_type: resourceType,
+      allowed_formats: isImage ? ['jpg', 'jpeg', 'png'] : ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'],
+      public_id: `${Date.now()}-${Math.round(Math.random() * 1E9)}-${file.originalname.split('.')[0]}`
+    };
   }
 });
 

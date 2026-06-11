@@ -12,11 +12,20 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'image/jpeg',
+      'image/png'
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF, DOC, DOCX, PPT, PPTX files are allowed.'));
+      cb(new Error('Invalid file type. Only PDF, DOC, DOCX, PPT, PPTX, TXT, JPG, PNG files are allowed.'));
     }
   }
 });
@@ -33,11 +42,11 @@ router.post('/upload', protect, upload.single('file'), [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
 
     if (!req.file) {
-      return res.status(400).json({ message: 'File is required' });
+      return res.status(400).json({ success: false, message: 'File is required' });
     }
 
     const { title, description, subject, gradeLevel, author, licenseType } = req.body;
@@ -47,6 +56,9 @@ router.post('/upload', protect, upload.single('file'), [
     if (req.file.mimetype === 'application/pdf') fileType = 'PDF';
     else if (req.file.mimetype.includes('word')) fileType = req.file.mimetype.includes('openxml') ? 'DOCX' : 'DOC';
     else if (req.file.mimetype.includes('powerpoint')) fileType = req.file.mimetype.includes('openxml') ? 'PPTX' : 'PPT';
+    else if (req.file.mimetype === 'text/plain') fileType = 'TXT';
+    else if (req.file.mimetype === 'image/jpeg') fileType = 'JPG';
+    else if (req.file.mimetype === 'image/png') fileType = 'PNG';
 
     // Create resource with Cloudinary URL
     const resource = await Resource.create({
@@ -76,7 +88,7 @@ router.post('/upload', protect, upload.single('file'), [
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ message: 'Server error during upload' });
+    res.status(500).json({ success: false, message: 'Server error during upload' });
   }
 });
 

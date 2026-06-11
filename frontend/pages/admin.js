@@ -71,12 +71,16 @@ export default function Admin() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      if (response.ok) {
+      const result = await response.json();
+      if (result.success) {
         toast.success('Resource approved successfully');
         fetchData();
+      } else {
+        toast.error(result.message || 'Approval failed');
       }
     } catch (error) {
-      toast.error('Approval failed');
+      console.error('Approval error:', error);
+      toast.error('Approval failed. Please try again.');
     }
   };
 
@@ -97,14 +101,18 @@ export default function Admin() {
         body: JSON.stringify({ reason: rejectReason })
       });
 
-      if (response.ok) {
+      const result = await response.json();
+      if (result.success) {
         toast.success('Resource rejected successfully');
         setRejectReason('');
         setRejectingId(null);
         fetchData();
+      } else {
+        toast.error(result.message || 'Rejection failed');
       }
     } catch (error) {
-      toast.error('Rejection failed');
+      console.error('Rejection error:', error);
+      toast.error('Rejection failed. Please try again.');
     }
   };
 
@@ -116,12 +124,16 @@ export default function Admin() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      if (response.ok) {
+      const result = await response.json();
+      if (result.success) {
         toast.success('User promoted to admin successfully');
         fetchData();
+      } else {
+        toast.error(result.message || 'Promotion failed');
       }
     } catch (error) {
-      toast.error('Promotion failed');
+      console.error('Promotion error:', error);
+      toast.error('Promotion failed. Please try again.');
     }
   };
 
@@ -153,13 +165,13 @@ export default function Admin() {
   ];
 
   const StatCard = ({ title, value, icon: Icon, colorClass }) => (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow">
-      <div>
-        <p className="text-gray-500 text-sm font-medium mb-1 uppercase tracking-wide">{title}</p>
-        <p className="text-3xl font-extrabold text-gray-900">{value}</p>
+    <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 flex items-start justify-between shadow-sm hover:shadow-md transition-shadow">
+      <div className="min-w-0">
+        <p className="text-gray-500 text-xs sm:text-sm font-medium mb-1 uppercase tracking-wide truncate">{title}</p>
+        <p className="text-2xl sm:text-3xl font-extrabold text-gray-900">{value}</p>
       </div>
-      <div className={`p-3 rounded-lg ${colorClass}`}>
-        <Icon className="h-6 w-6" />
+      <div className={`p-2 sm:p-3 rounded-lg ${colorClass} shrink-0 ml-2`}>
+        <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
       </div>
     </div>
   );
@@ -247,17 +259,17 @@ export default function Admin() {
       <main className="flex-1 lg:ml-0 overflow-auto w-full">
         {/* Top bar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="px-6 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="pl-12 lg:pl-0">
-              <h1 className="text-2xl font-bold text-gray-900">
+          <div className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="pl-10 sm:pl-12 lg:pl-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 {sidebarItems.find(item => item.id === activeTab)?.label}
               </h1>
-              <p className="text-sm text-gray-500 mt-1">Manage platform content and users.</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Manage platform content and users.</p>
             </div>
-            <div className="flex items-center space-x-3 pl-12 lg:pl-0">
+            <div className="flex items-center space-x-3 pl-10 sm:pl-12 lg:pl-0">
               <Link
                 href="/resources"
-                className="btn-outline flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium"
+                className="btn-outline flex items-center space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium"
               >
                 <BookOpen className="h-4 w-4" />
                 <span>View Site</span>
@@ -267,12 +279,12 @@ export default function Admin() {
         </header>
 
         {/* Content area */}
-        <div className="p-6 sm:p-8 max-w-7xl mx-auto">
+        <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && stats && (
             <div className="space-y-8">
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                 <StatCard
                   title="Total Users"
                   value={stats.totalUsers}
@@ -368,7 +380,7 @@ export default function Admin() {
               ) : (
                 <div className="grid gap-6">
                   {pendingResources.map((resource) => (
-                    <div key={resource._id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-start justify-between gap-6">
+                    <div key={resource._id} className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm flex flex-col gap-4 relative">
                       <div className="flex-1">
                         <div className="flex items-start space-x-4">
                           <div className="bg-yellow-50 border border-yellow-100 p-3 rounded-lg mt-1 hidden sm:block">
@@ -407,26 +419,26 @@ export default function Admin() {
                         </div>
                       </div>
                       
-                      <div className="flex md:flex-col gap-3 shrink-0 border-t border-gray-100 md:border-t-0 pt-4 md:pt-0">
+                      <div className="flex flex-wrap gap-2 sm:gap-3 shrink-0 border-t border-gray-100 pt-3 sm:pt-4">
                         <a 
                           href={resource.fileUrl} 
                           target="_blank" 
                           rel="noreferrer"
-                          className="flex-1 md:flex-none btn-outline flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium"
+                          className="flex-1 sm:flex-none btn-outline flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium"
                         >
                           <Download className="h-4 w-4" />
                           <span>View File</span>
                         </a>
                         <button
                           onClick={() => handleApprove(resource._id)}
-                          className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                         >
                           <Check className="h-4 w-4" />
                           <span>Approve</span>
                         </button>
                         <button
                           onClick={() => setRejectingId(resource._id)}
-                          className="flex-1 md:flex-none bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          className="flex-1 sm:flex-none bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                         >
                           <X className="h-4 w-4" />
                           <span>Reject</span>

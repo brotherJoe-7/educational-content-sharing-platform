@@ -50,7 +50,7 @@ router.put('/resources/:id/approve', protect, authorize('admin'), async (req, re
   try {
     const resource = await Resource.findById(req.params.id);
     if (!resource) {
-      return res.status(404).json({ message: 'Resource not found' });
+      return res.status(404).json({ success: false, message: 'Resource not found' });
     }
 
     resource.status = 'approved';
@@ -68,7 +68,7 @@ router.put('/resources/:id/approve', protect, authorize('admin'), async (req, re
     });
   } catch (error) {
     console.error('Approve resource error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
@@ -79,12 +79,12 @@ router.put('/resources/:id/reject', protect, authorize('admin'), [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
 
     const resource = await Resource.findById(req.params.id);
     if (!resource) {
-      return res.status(404).json({ message: 'Resource not found' });
+      return res.status(404).json({ success: false, message: 'Resource not found' });
     }
 
     resource.status = 'rejected';
@@ -102,7 +102,7 @@ router.put('/resources/:id/reject', protect, authorize('admin'), [
     });
   } catch (error) {
     console.error('Reject resource error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

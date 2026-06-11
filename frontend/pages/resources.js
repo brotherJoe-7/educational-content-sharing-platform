@@ -260,29 +260,30 @@ export default function Resources() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-40">
+      <nav className="bg-white shadow-sm sticky top-0 z-40 safe-top">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-14 sm:h-16">
             <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-3">
-                <div className="bg-blue-600 p-2 rounded-xl">
-                  <BookOpen className="h-6 w-6 text-white" />
+              <Link href="/" className="flex items-center space-x-2 sm:space-x-3">
+                <div className="bg-blue-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl shrink-0">
+                  <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-800">EduShare Sierra Leone</span>
+                <span className="text-base sm:text-xl font-bold text-gray-800">EduShare<span className="hidden sm:inline"> Sierra Leone</span></span>
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-600 hidden sm:block">Welcome, {user?.name}</span>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <span className="text-gray-600 hidden md:block text-sm">Welcome, {user?.name}</span>
               {user?.role === 'admin' && (
-                <Link href="/admin" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-xl font-medium transition-colors">
-                  Admin Dashboard
+                <Link href="/admin" className="text-gray-600 hover:text-blue-600 px-2 sm:px-3 py-2 rounded-xl font-medium transition-colors text-sm">
+                  <span className="hidden sm:inline">Admin Dashboard</span>
+                  <span className="sm:hidden">Admin</span>
                 </Link>
               )}
-              <Link href="/upload" className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md">
+              <Link href="/upload" className="flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg sm:rounded-xl hover:bg-blue-700 transition-all shadow-md text-sm">
                 <Upload className="h-4 w-4" />
                 <span className="hidden sm:inline">Upload</span>
               </Link>
-              <button onClick={handleLogout} className="flex items-center text-gray-600 hover:text-red-600 px-3 py-2 rounded-xl font-medium transition-colors">
+              <button onClick={handleLogout} className="flex items-center text-gray-600 hover:text-red-600 px-2 sm:px-3 py-2 rounded-xl font-medium transition-colors">
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
@@ -291,16 +292,16 @@ export default function Resources() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Resources</h1>
-          <p className="text-gray-600">Discover and download educational materials for Sierra Leone</p>
+        <div className="mb-5 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Browse Resources</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Discover and download educational materials for Sierra Leone</p>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-md p-4 sm:p-6 mb-5 sm:mb-8">
+          <div className="flex flex-col gap-3 sm:gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
@@ -311,18 +312,19 @@ export default function Resources() {
                 className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-xl transition-all ${
-                showFilters 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <Filter className="h-5 w-5" />
-              <span>Filters</span>
-            </button>
-            <div className="flex items-center space-x-2 bg-gray-100 rounded-xl p-1">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center justify-center space-x-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all text-sm ${
+                  showFilters 
+                    ? 'bg-blue-600 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">Filters</span>
+              </button>
+              <div className="flex items-center space-x-1 sm:space-x-2 bg-gray-100 rounded-xl p-1">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded-lg transition-colors ${
@@ -339,11 +341,12 @@ export default function Resources() {
               >
                 <List className="h-5 w-5" />
               </button>
+              </div>
             </div>
           </div>
 
           {showFilters && (
-            <div className="mt-6 grid md:grid-cols-4 gap-4">
+            <div className="mt-4 sm:mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <select
                 value={filters.subject}
                 onChange={(e) => setFilters({ ...filters, subject: e.target.value })}
@@ -417,7 +420,7 @@ export default function Resources() {
 
         {/* Resource Grid/List */}
         {viewMode === 'grid' ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredResources.map((resource) => (
               <ResourceCard key={resource._id} resource={resource} />
             ))}
@@ -431,7 +434,7 @@ export default function Resources() {
         )}
 
         {filteredResources.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-md p-12 text-center">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-md p-8 sm:p-12 text-center">
             <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-gray-800 mb-2">No resources found</h3>
             <p className="text-gray-500 mb-4">Try adjusting your search or filters</p>

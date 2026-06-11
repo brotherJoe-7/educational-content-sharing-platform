@@ -79,12 +79,14 @@ export default function Upload() {
       const result = await response.json();
       if (result.success) {
         toast.success('Resource uploaded successfully! Pending approval.');
+        setFile(null);
         router.push('/resources');
       } else {
         toast.error(result.message || 'Upload failed');
       }
     } catch (error) {
-      toast.error('Upload failed');
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Upload failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -103,21 +105,22 @@ export default function Upload() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-40">
+      <nav className="bg-white shadow-sm sticky top-0 z-40 safe-top">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-14 sm:h-16">
             <div className="flex items-center">
-              <Link href="/resources" className="flex items-center space-x-3">
-                <div className="bg-blue-600 p-2 rounded-xl">
-                  <BookOpen className="h-6 w-6 text-white" />
+              <Link href="/resources" className="flex items-center space-x-2 sm:space-x-3">
+                <div className="bg-blue-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl shrink-0">
+                  <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-800">EduShare Sierra Leone</span>
+                <span className="text-base sm:text-xl font-bold text-gray-800">EduShare<span className="hidden sm:inline"> Sierra Leone</span></span>
               </Link>
             </div>
             <div className="flex items-center">
-              <Link href="/resources" className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 rounded-xl font-medium transition-colors">
+              <Link href="/resources" className="flex items-center space-x-1.5 sm:space-x-2 text-gray-600 hover:text-blue-600 px-3 sm:px-4 py-2 rounded-xl font-medium transition-colors text-sm">
                 <ArrowLeft className="h-4 w-4" />
-                <span>Back to Resources</span>
+                <span className="hidden sm:inline">Back to Resources</span>
+                <span className="sm:hidden">Back</span>
               </Link>
             </div>
           </div>
@@ -125,19 +128,19 @@ export default function Upload() {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Educational Resource</h1>
-          <p className="text-gray-600">Share your educational materials with the Sierra Leone community</p>
+        <div className="mb-5 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Upload Educational Resource</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Share your educational materials with the Sierra Leone community</p>
         </div>
 
         {/* Upload Form */}
-        <div className="bg-white rounded-2xl shadow-md p-8">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-md p-5 sm:p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* File Upload Area */}
             <div
-              className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+              className={`relative border-2 border-dashed rounded-xl sm:rounded-2xl p-4 sm:p-8 text-center transition-all ${
                 dragActive
                   ? 'border-blue-500 bg-blue-50'
                   : file
@@ -152,7 +155,7 @@ export default function Upload() {
               <input
                 type="file"
                 onChange={handleFileChange}
-                accept=".pdf,.doc,.docx,.ppt,.pptx"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
               
@@ -323,6 +326,8 @@ export default function Upload() {
                 <div>
                   <p className="text-sm font-semibold text-blue-900 mb-1">Upload Guidelines</p>
                   <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Preferred format: PDF</li>
+                    <li>• Supported formats: PDF, DOCX, PPTX, TXT, JPG, PNG</li>
                     <li>• Ensure you have the right to share this content</li>
                     <li>• Use appropriate open licenses for educational content</li>
                     <li>• Provide accurate and complete metadata</li>
