@@ -166,6 +166,7 @@ export default function Resources() {
             <Download className="h-4 w-4 mr-1" />
             {resource.downloadCount}
           </span>
+        </div>
         <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
           <div className="flex space-x-2 w-full">
             <a
