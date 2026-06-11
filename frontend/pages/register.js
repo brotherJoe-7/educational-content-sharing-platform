@@ -28,137 +28,125 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen flex bg-gray-50" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        .auth-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%); }
-        .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(37,99,235,0.4); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(37,99,235,0.5); }
-        .input-field { transition: all 0.2s ease; }
-        .input-field:focus { box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-        .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .btn-blue { background: #2563eb; transition: background 0.15s; }
+        .btn-blue:hover { background: #1d4ed8; }
+        .input-field { transition: border-color 0.15s, box-shadow 0.15s; border: 1px solid #e5e7eb; }
+        .input-field:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
       `}</style>
 
-      {/* Left – Branding */}
-      <div className="hidden lg:flex lg:w-1/2 auth-gradient flex-col justify-between p-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400 rounded-full opacity-10 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400 rounded-full opacity-10 blur-3xl" />
-
-        <Link href="/" className="flex items-center space-x-3 relative z-10">
-          <div className="bg-white/10 p-2.5 rounded-xl">
-            <BookOpen className="h-6 w-6 text-white" />
-          </div>
-          <span className="text-white font-bold text-xl">EduShare Sierra Leone</span>
+      {/* Left panel */}
+      <div className="hidden lg:flex lg:w-5/12 bg-gray-900 flex-col justify-between p-12">
+        <Link href="/" className="flex items-center space-x-2">
+          <BookOpen className="h-5 w-5 text-blue-400" />
+          <span className="text-white font-bold">EduShare Sierra Leone</span>
         </Link>
 
-        <div className="relative z-10 max-w-sm">
+        <div>
           <h1 className="text-4xl font-extrabold text-white mb-4 leading-tight">
-            Join Sierra Leone's #1 education platform
+            Join Sierra Leone's education platform
           </h1>
-          <p className="text-blue-200 text-lg mb-8 leading-relaxed">
+          <p className="text-gray-400 text-base mb-8 leading-relaxed">
             Create a free account and start sharing educational resources with thousands of educators.
           </p>
-          <div className="space-y-3">
+          <ul className="space-y-3">
             {[
               'Upload and share educational materials',
               'Access resources from educators nationwide',
-              'Contribute to Sierra Leone\'s education',
+              "Contribute to Sierra Leone's education",
             ].map((item) => (
-              <div key={item} className="glass rounded-xl px-4 py-3 flex items-center space-x-3">
-                <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                <span className="text-blue-100 text-sm">{item}</span>
-              </div>
+              <li key={item} className="flex items-start space-x-3">
+                <CheckCircle className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                <span className="text-gray-300 text-sm">{item}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
 
-        <p className="text-blue-400 text-sm relative z-10">© 2026 EduShare Sierra Leone</p>
+        <p className="text-gray-600 text-sm">© 2026 EduShare Sierra Leone</p>
       </div>
 
-      {/* Right – Form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50 overflow-y-auto">
+      {/* Right form */}
+      <div className="flex-1 flex items-center justify-center p-6 overflow-y-auto">
         <div className="w-full max-w-md my-8">
-
           {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-8">
-            <Link href="/" className="inline-flex items-center space-x-2">
-              <div className="bg-blue-600 p-2 rounded-xl">
-                <BookOpen className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-bold text-slate-900 text-lg">EduShare Sierra Leone</span>
-            </Link>
+          <div className="lg:hidden flex items-center space-x-2 mb-8 justify-center">
+            <BookOpen className="h-5 w-5 text-blue-600" />
+            <span className="font-bold text-gray-900">EduShare Sierra Leone</span>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-xl p-8 border border-slate-100">
-            <div className="mb-8">
-              <h2 className="text-3xl font-extrabold text-slate-900 mb-1">Create account</h2>
-              <p className="text-slate-500">Join our educational community today</p>
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+            <div className="mb-7">
+              <h2 className="text-2xl font-extrabold text-gray-900 mb-1">Create account</h2>
+              <p className="text-gray-500 text-sm">Join our educational community today</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Name */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     {...register('name', { required: 'Name is required' })}
                     type="text"
-                    className="input-field w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900"
+                    className="input-field w-full pl-10 pr-4 py-2.5 rounded-lg bg-white text-gray-900 text-sm"
                     placeholder="John Doe"
                   />
                 </div>
                 {errors.name && (
-                  <p className="mt-2 text-sm text-red-500 flex items-center space-x-1">
-                    <AlertCircle className="h-4 w-4" /><span>{errors.name.message}</span>
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center space-x-1">
+                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" /><span>{errors.name.message}</span>
                   </p>
                 )}
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Email address</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     {...register('email', { required: 'Email is required' })}
                     type="email"
-                    className="input-field w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900"
+                    className="input-field w-full pl-10 pr-4 py-2.5 rounded-lg bg-white text-gray-900 text-sm"
                     placeholder="you@example.com"
                   />
                 </div>
                 {errors.email && (
-                  <p className="mt-2 text-sm text-red-500 flex items-center space-x-1">
-                    <AlertCircle className="h-4 w-4" /><span>{errors.email.message}</span>
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center space-x-1">
+                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" /><span>{errors.email.message}</span>
                   </p>
                 )}
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     {...register('password', {
                       required: 'Password is required',
                       minLength: { value: 6, message: 'Password must be at least 6 characters' }
                     })}
                     type={showPassword ? 'text' : 'password'}
-                    className="input-field w-full pl-11 pr-12 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900"
+                    className="input-field w-full pl-10 pr-10 py-2.5 rounded-lg bg-white text-gray-900 text-sm"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="mt-2 text-sm text-red-500 flex items-center space-x-1">
-                    <AlertCircle className="h-4 w-4" /><span>{errors.password.message}</span>
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center space-x-1">
+                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" /><span>{errors.password.message}</span>
                   </p>
                 )}
               </div>
@@ -169,9 +157,9 @@ export default function Register() {
                   {...register('privacyConsent', { required: 'You must agree to the privacy policy' })}
                   type="checkbox"
                   id="privacyConsent"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded mt-0.5 flex-shrink-0 cursor-pointer"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 flex-shrink-0 cursor-pointer"
                 />
-                <label htmlFor="privacyConsent" className="text-sm text-slate-600">
+                <label htmlFor="privacyConsent" className="text-sm text-gray-600">
                   I agree to the{' '}
                   <Link href="/privacy" className="text-blue-600 hover:text-blue-800 font-medium">Privacy Policy</Link>
                   {' '}and{' '}
@@ -179,16 +167,15 @@ export default function Register() {
                 </label>
               </div>
               {errors.privacyConsent && (
-                <p className="text-sm text-red-500 flex items-center space-x-1">
-                  <AlertCircle className="h-4 w-4" /><span>{errors.privacyConsent.message}</span>
+                <p className="text-xs text-red-500 flex items-center space-x-1">
+                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" /><span>{errors.privacyConsent.message}</span>
                 </p>
               )}
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full flex items-center justify-center space-x-2 text-white font-semibold py-3.5 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn-blue w-full flex items-center justify-center space-x-2 text-white font-semibold py-2.5 rounded-lg text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -204,21 +191,16 @@ export default function Register() {
               </button>
             </form>
 
-            <div className="mt-8 text-center">
-              <p className="text-slate-500 text-sm">
-                Already have an account?{' '}
-                <Link href="/login" className="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center">
-                  Sign in
-                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                </Link>
-              </p>
-            </div>
+            <p className="mt-6 text-center text-sm text-gray-500">
+              Already have an account?{' '}
+              <Link href="/login" className="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center">
+                Sign in <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Link>
+            </p>
           </div>
 
-          <div className="mt-6 text-center">
-            <Link href="/" className="text-slate-500 hover:text-blue-600 text-sm font-medium transition-colors">
-              ← Back to Home
-            </Link>
+          <div className="mt-5 text-center">
+            <Link href="/" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">← Back to Home</Link>
           </div>
         </div>
       </div>
