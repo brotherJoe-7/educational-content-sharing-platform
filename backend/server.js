@@ -74,7 +74,22 @@ app.get('/', (req, res) => {
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === 'production' ? 200 : 100, // Higher limit for production
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
+  skip: (req) => {
+    // Skip rate limiting for health checks and root endpoint
+    return req.path === '/api/health' || req.path === '/';
+  },
+  keyGenerator: (req) => {
+    // Properly handle X-Forwarded-For header from proxies like Render
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+      // Take the first IP if multiple are present (comma-separated)
+      return typeof forwarded === 'string' 
+        ? forwarded.split(',')[0].trim() 
+        : (Array.isArray(forwarded) ? forwarded[0] : String(forwarded).split(',')[0].trim());
+    }
+    return req.ip;
+  }
 });
 app.use(limiter);
 
