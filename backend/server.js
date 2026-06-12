@@ -80,15 +80,28 @@ const limiter = rateLimit({
     return req.path === '/api/health' || req.path === '/';
   },
   keyGenerator: (req) => {
-    // Properly handle X-Forwarded-For header from proxies like Render
-    const forwarded = req.headers['x-forwarded-for'];
-    if (forwarded) {
-      // Take the first IP if multiple are present (comma-separated)
-      return typeof forwarded === 'string' 
-        ? forwarded.split(',')[0].trim() 
-        : (Array.isArray(forwarded) ? forwarded[0] : String(forwarded).split(',')[0].trim());
+    try {
+      // Properly handle X-Forwarded-For header from proxies like Render
+      const forwarded = req.headers['x-forwarded-for'];
+      if (forwarded) {
+        // Take the first IP if multiple are present (comma-separated)
+        const ip = typeof forwarded === 'string' 
+          ? forwarded.split(',')[0].trim() 
+          : (Array.isArray(forwarded) ? forwarded[0] : String(forwarded).split(',')[0].trim());
+        return ip || req.ip || 'unknown';
+      }
+      return req.ip || 'unknown';
+    } catch (err) {
+      // Fallback to request IP if any error occurs
+      return req.ip || 'unknown';
     }
-    return req.ip;
+  },
+  handler: (req, res) => {
+    // Custom handler for rate limit exceeded
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests from this IP, please try again later.'
+    });
   }
 });
 app.use(limiter);
