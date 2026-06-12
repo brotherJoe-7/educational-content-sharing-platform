@@ -8,6 +8,9 @@ const logger = require('./utils/logger');
 
 const app = express();
 
+// Trust Render's proxy headers so express-rate-limit can safely parse X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
