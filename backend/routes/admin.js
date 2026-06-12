@@ -223,9 +223,41 @@ router.get('/resources/:id/file', protect, authorize('admin'), async (req, res) 
     await resource.save();
 
     const fileUrl = buildCloudinaryUrl(resource);
+    // If Authorization header is present (admin AJAX or client), return the URL so frontend can open it
+    // This avoids redirecting the browser directly to Cloudinary which may return 401.
+    const hasAuthHeader = !!req.headers.authorization;
+    if (hasAuthHeader) {
+      return res.json({ success: true, fileUrl });
+    }
+
+    // If request expects JSON (explicit Accept), also return JSON
+    const acceptsJson = req.headers.accept && req.headers.accept.indexOf('application/json') !== -1;
+    if (acceptsJson) {
+      return res.json({ success: true, fileUrl });
+    }
+
+    // Fallback: redirect (for direct server-side requests)
     res.redirect(fileUrl);
   } catch (error) {
     console.error('Get file error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Return the signed/private file URL for admin clients (AJAX)
+router.get('/resources/:id/file/url', protect, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid resource ID format' });
+    }
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) return res.status(404).json({ success: false, message: 'Resource not found' });
+    if (resource.status === 'rejected') return res.status(403).json({ success: false, message: 'Cannot access rejected resource file' });
+
+    const fileUrl = buildCloudinaryUrl(resource);
+    return res.json({ success: true, fileUrl });
+  } catch (error) {
+    console.error('Get file URL error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
