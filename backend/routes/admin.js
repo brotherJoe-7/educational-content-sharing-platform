@@ -284,6 +284,47 @@ router.get('/resources/:id/file', protect, authorize('admin'), async (req, res) 
   }
 });
 
+// Admin inline file proxy (to prevent direct Cloudinary downloads)
+router.get('/resources/:id/proxy', protect, authorize('admin'), async (req, res) => {
+  try {
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) return res.status(404).json({ message: 'Resource not found' });
+
+    const { url: streamUrl, isArchive } = await getCloudinaryStreamUrl(resource);
+    const upstream = await fetch(streamUrl);
+    if (!upstream.ok) return res.status(502).json({ message: 'Failed to fetch from storage' });
+
+    res.setHeader('Content-Disposition', `inline; filename="${resource.fileName}"`);
+    res.setHeader('Cache-Control', 'no-cache');
+    res.removeHeader('X-Frame-Options');
+    res.removeHeader('Content-Security-Policy');
+    res.removeHeader('Cross-Origin-Resource-Policy');
+
+    if (isArchive) {
+      res.setHeader('Content-Type', resource.fileName.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+      const { Readable } = require('stream');
+      const unzipper = require('unzipper');
+      Readable.fromWeb(upstream.body).pipe(unzipper.Parse())
+        .on('entry', (entry) => entry.pipe(res))
+        .on('error', () => { if (!res.headersSent) res.status(502).json({ message: 'Unzip failed' }); });
+    } else {
+      let contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+      if (resource.fileName.toLowerCase().endsWith('.pdf')) contentType = 'application/pdf';
+      res.setHeader('Content-Type', contentType);
+      
+      const body = upstream.body;
+      if (body && typeof body.pipe === 'function') body.pipe(res);
+      else {
+        const buffer = await upstream.arrayBuffer();
+        res.send(Buffer.from(buffer));
+      }
+    }
+  } catch (error) {
+    console.error('Admin proxy error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Return the signed/private file URL for admin clients (AJAX)
 router.get('/resources/:id/file/url', protect, authorize('admin'), async (req, res) => {
   try {

@@ -571,13 +571,17 @@ export default function Admin() {
                         <button
                           onClick={async () => {
                             const token = localStorage.getItem('token');
+                            const proxyUrl = `${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resource._id}/proxy`;
                             try {
-                              const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resource._id}/file/url`, {
-                                headers: { Authorization: `Bearer ${token}` }
-                              });
-                              const d = await r.json();
-                              if (d.success && d.fileUrl) window.open(d.fileUrl, '_blank');
-                              else toast.error(d.message || 'Failed to get file URL');
+                              const r = await fetch(proxyUrl, { headers: { Authorization: `Bearer ${token}` } });
+                              if (!r.ok) throw new Error('Proxy failed');
+                              
+                              // We have to open a window and set its content, or download if it is a blob.
+                              // Actually, standard window.open doesn't allow setting Authorization headers.
+                              // Since admin proxy needs auth, we can fetch the blob and open an object URL!
+                              const blob = await r.blob();
+                              const objectUrl = URL.createObjectURL(blob);
+                              window.open(objectUrl, '_blank');
                             } catch (e) {
                               console.error('Open file error', e);
                               toast.error('Failed to open file');
