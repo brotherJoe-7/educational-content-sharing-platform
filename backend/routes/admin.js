@@ -179,7 +179,7 @@ router.put('/resources/:id/reject', protect, authorize('admin'), [
   }
 });
 
-// Delete a resource
+// Soft delete (Archive) a resource
 router.delete('/resources/:id', protect, authorize('admin'), async (req, res) => {
   try {
     if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -191,7 +191,84 @@ router.delete('/resources/:id', protect, authorize('admin'), async (req, res) =>
       return res.status(404).json({ success: false, message: 'Resource not found' });
     }
 
-    // Delete from Cloudinary if public ID exists
+    // Set status to archived and add archivedAt timestamp (triggers 7-day TTL)
+    resource.status = 'archived';
+    resource.archivedAt = Date.now();
+    resource.auditTrail.push({
+      action: 'archived',
+      performedBy: req.user.id,
+      details: `Resource archived. Will be permanently deleted in 7 days.`
+    });
+
+    await resource.save();
+
+    // Log the archiving
+    await SystemLog.create({
+      action: 'deleted_resource',
+      details: `Archived resource: ${resource.title} (Soft delete)`,
+      performedBy: req.user.id
+    });
+
+    res.json({
+      success: true,
+      message: 'Resource archived successfully'
+    });
+  } catch (error) {
+    console.error('Archive resource error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Restore an archived resource
+router.put('/resources/:id/restore', protect, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid resource ID format' });
+    }
+
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+
+    if (resource.status !== 'archived') {
+      return res.status(400).json({ success: false, message: 'Resource is not archived' });
+    }
+
+    resource.status = 'approved';
+    resource.archivedAt = undefined;
+    resource.auditTrail.push({
+      action: 'restored',
+      performedBy: req.user.id,
+      details: `Resource restored from archive.`
+    });
+
+    await resource.save();
+
+    res.json({
+      success: true,
+      message: 'Resource restored successfully',
+      resource
+    });
+  } catch (error) {
+    console.error('Restore resource error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Force delete (Permanent) a resource
+router.delete('/resources/:id/force', protect, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid resource ID format' });
+    }
+
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+
+    // Delete from Cloudinary
     if (resource.cloudinaryPublicId) {
       try {
         await cloudinary.uploader.destroy(resource.cloudinaryPublicId, {
@@ -199,25 +276,24 @@ router.delete('/resources/:id', protect, authorize('admin'), async (req, res) =>
         });
       } catch (cloudErr) {
         console.error('Cloudinary deletion error:', cloudErr);
-        // Continue even if cloudinary deletion fails to ensure DB is cleaned up
       }
     }
 
     await Resource.findByIdAndDelete(req.params.id);
 
-    // Log the deletion
+    // Log permanent deletion
     await SystemLog.create({
       action: 'deleted_resource',
-      details: `Deleted resource: ${resource.title}`,
+      details: `Permanently deleted resource: ${resource.title}`,
       performedBy: req.user.id
     });
 
     res.json({
       success: true,
-      message: 'Resource deleted successfully'
+      message: 'Resource permanently deleted'
     });
   } catch (error) {
-    console.error('Delete resource error:', error);
+    console.error('Force delete resource error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

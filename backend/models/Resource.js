@@ -65,8 +65,11 @@ const resourceSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'archived'],
     default: 'pending'
+  },
+  archivedAt: {
+    type: Date
   },
   downloadCount: {
     type: Number,
@@ -135,5 +138,8 @@ resourceSchema.index({ downloadCount: -1 });
 resourceSchema.index({ subject: 1, gradeLevel: 1 });
 resourceSchema.index({ subject: 1, status: 1 });
 resourceSchema.index({ uploadedBy: 1 });
+
+// TTL index to automatically delete archived resources after 7 days (604800 seconds)
+resourceSchema.index({ archivedAt: 1 }, { expireAfterSeconds: 604800 });
 
 module.exports = mongoose.model('Resource', resourceSchema);

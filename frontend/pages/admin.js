@@ -16,6 +16,7 @@ export default function Admin() {
   const [analytics, setAnalytics] = useState(null);
   const [pendingResources, setPendingResources] = useState([]);
   const [allResources, setAllResources] = useState([]);
+  const [archivedResources, setArchivedResources] = useState([]);
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -40,10 +41,11 @@ export default function Admin() {
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
 
-      const [statsRes, pendingRes, allRes, usersRes, logsRes] = await Promise.all([
+      const [statsRes, pendingRes, allRes, archivedRes, usersRes, logsRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats`, { headers }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/pending`, { headers }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/all`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/all?status=archived`, { headers }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, { headers }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/logs`, { headers })
       ]);
@@ -51,6 +53,7 @@ export default function Admin() {
       const statsData = await statsRes.json();
       const pendingData = await pendingRes.json();
       const allData = await allRes.json();
+      const archivedData = await archivedRes.json();
       const usersData = await usersRes.json();
       const logsData = await logsRes.json();
 
@@ -60,6 +63,7 @@ export default function Admin() {
       }
       if (pendingData.success) setPendingResources(pendingData.resources);
       if (allData.success) setAllResources(allData.resources);
+      if (archivedData.success) setArchivedResources(archivedData.resources);
       if (usersData.success) setUsers(usersData.users);
       if (logsData.success) setLogs(logsData.logs || []);
     } catch (error) {
@@ -194,7 +198,7 @@ export default function Admin() {
   };
 
   const handleDeleteResource = async (resourceId) => {
-    if (!window.confirm('Are you sure you want to completely remove this resource? This cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this resource? It will be moved to the archive for 7 days.')) {
       return;
     }
     
@@ -207,14 +211,60 @@ export default function Admin() {
 
       const result = await response.json();
       if (result.success) {
-        toast.success('Resource deleted successfully');
+        toast.success('Resource archived successfully');
         fetchData(); // Refresh data
       } else {
-        toast.error(result.message || 'Deletion failed');
+        toast.error(result.message || 'Archiving failed');
       }
     } catch (error) {
-      console.error('Resource deletion error:', error);
-      toast.error('Deletion failed. Please try again.');
+      console.error('Resource archiving error:', error);
+      toast.error('Archiving failed. Please try again.');
+    }
+  };
+
+  const handleRestoreResource = async (resourceId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resourceId}/restore`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Resource restored successfully');
+        fetchData();
+      } else {
+        toast.error(result.message || 'Restore failed');
+      }
+    } catch (error) {
+      console.error('Resource restore error:', error);
+      toast.error('Restore failed. Please try again.');
+    }
+  };
+
+  const handleForceDeleteResource = async (resourceId) => {
+    if (!window.confirm('WARNING: Are you sure you want to permanently delete this resource? This cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resourceId}/force`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Resource permanently deleted');
+        fetchData(); // Refresh data
+      } else {
+        toast.error(result.message || 'Permanent deletion failed');
+      }
+    } catch (error) {
+      console.error('Resource permanent deletion error:', error);
+      toast.error('Permanent deletion failed. Please try again.');
     }
   };
 
@@ -279,6 +329,7 @@ export default function Admin() {
     { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
     { id: 'pending', icon: Clock, label: 'Pending Reviews', count: pendingResources.length },
     { id: 'resources', icon: FileText, label: 'All Resources' },
+    { id: 'archive', icon: LogOut, label: 'Archive (Trash)' },
     { id: 'users', icon: Users, label: 'User Management' },
     { id: 'logs', icon: Shield, label: 'Activity Logs' },
   ];
@@ -739,6 +790,72 @@ export default function Admin() {
                       <tr>
                         <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                           No resources found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Archived Resources Tab */}
+          {activeTab === 'archive' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-gray-200 bg-red-50 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-red-500" />
+                <h2 className="text-base sm:text-lg font-bold text-red-900">Archived Resources (Soft Deleted)</h2>
+              </div>
+              <div className="p-4 text-sm text-gray-600 bg-gray-50 border-b border-gray-200">
+                Resources here will be permanently deleted 7 days after they were archived.
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title & Info</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Archived Date</th>
+                      <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200 text-xs sm:text-sm">
+                    {archivedResources.map((resource) => (
+                      <tr key={resource._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
+                          <div className="font-medium text-gray-900 max-w-[200px] sm:max-w-[300px] truncate" title={resource.title}>
+                            {resource.title}
+                          </div>
+                          <div className="text-gray-500 mt-1 flex items-center gap-2">
+                            <span>{resource.subject}</span>
+                            <span className="text-gray-300">•</span>
+                            <span>{resource.gradeLevel}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-gray-500">
+                          {resource.archivedAt ? new Date(resource.archivedAt).toLocaleDateString() : 'Unknown'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right font-medium">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleRestoreResource(resource._id)}
+                              className="text-green-600 hover:text-green-900 bg-green-50 px-2 sm:px-3 py-1 rounded transition-colors"
+                            >
+                              Restore
+                            </button>
+                            <button
+                              onClick={() => handleForceDeleteResource(resource._id)}
+                              className="text-red-600 hover:text-red-900 bg-red-50 px-2 sm:px-3 py-1 rounded transition-colors"
+                            >
+                              Force Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {archivedResources.length === 0 && (
+                      <tr>
+                        <td colSpan="3" className="px-6 py-8 text-center text-gray-500 font-medium">
+                          No resources currently in archive.
                         </td>
                       </tr>
                     )}
