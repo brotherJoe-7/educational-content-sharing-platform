@@ -16,6 +16,13 @@ export default function ResourceDetails() {
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [ratingModal, setRatingModal] = useState({ isOpen: false, rating: 0, comment: '' });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    }
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -24,12 +31,12 @@ export default function ResourceDetails() {
   }, [id]);
 
   useEffect(() => {
-    if (resource && resource.fileType?.toLowerCase() === 'pdf') {
+    if (resource && resource.fileType?.toLowerCase() === 'pdf' && !isMobile) {
       loadPdfBlob(resource._id);
     }
     // Cleanup blob URL on unmount
     return () => { if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl); };
-  }, [resource]);
+  }, [resource, isMobile]);
 
   const fetchResourceDetails = async () => {
     try {
@@ -160,7 +167,9 @@ export default function ResourceDetails() {
     );
   }
 
-  const inlineViewUrl = `${process.env.NEXT_PUBLIC_API_URL}/resources/${resource._id}/download/proxy?inline=true`;
+  const inlineViewUrl = (isMobile && resource?.fileUrl) 
+    ? resource.fileUrl 
+    : `${process.env.NEXT_PUBLIC_API_URL}/resources/${resource?._id}/download/proxy?inline=true`;
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -266,7 +275,21 @@ export default function ResourceDetails() {
           </div>
           <div className={`${isFullscreen ? 'flex-1 w-full h-full' : 'h-[600px] w-full'} bg-gray-100 relative`}>
             {['pdf'].includes(resource.fileType?.toLowerCase()) ? (
-              pdfLoading ? (
+              isMobile && resource?.fileUrl ? (
+                <div className="w-full h-full relative">
+                  <iframe
+                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(resource.fileUrl)}&embedded=true`}
+                    className="w-full h-full border-0 absolute inset-0"
+                    title={resource.title}
+                  />
+                  <div className="absolute top-4 right-4 z-10">
+                    <a href={inlineViewUrl} target="_blank" rel="noopener noreferrer"
+                       className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-md">
+                      <Share2 className="h-4 w-4" /><span>Open Native Viewer</span>
+                    </a>
+                  </div>
+                </div>
+              ) : pdfLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-3">
                   <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
                   <p className="text-sm font-medium">Loading document preview...</p>
