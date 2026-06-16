@@ -621,15 +621,26 @@ export default function Admin() {
                       <div className="flex flex-wrap gap-2 sm:gap-3 shrink-0 border-t border-gray-100 pt-3 sm:pt-4">
                         <button
                           onClick={async () => {
+                            if (resource.contentType === 'article') {
+                              const win = window.open('', '_blank');
+                              win.document.write(`
+                                <html><head><title>${resource.title}</title>
+                                <style>body{font-family:system-ui,sans-serif;line-height:1.6;padding:40px;max-width:800px;margin:0 auto;color:#333}</style>
+                                </head><body>
+                                <h1>${resource.title}</h1>
+                                <hr/>
+                                ${resource.articleContent}
+                                </body></html>
+                              `);
+                              win.document.close();
+                              return;
+                            }
+                            
                             const token = localStorage.getItem('token');
                             const proxyUrl = `${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resource._id}/proxy`;
                             try {
                               const r = await fetch(proxyUrl, { headers: { Authorization: `Bearer ${token}` } });
                               if (!r.ok) throw new Error('Proxy failed');
-                              
-                              // We have to open a window and set its content, or download if it is a blob.
-                              // Actually, standard window.open doesn't allow setting Authorization headers.
-                              // Since admin proxy needs auth, we can fetch the blob and open an object URL!
                               const blob = await r.blob();
                               const objectUrl = URL.createObjectURL(blob);
                               window.open(objectUrl, '_blank');
@@ -640,8 +651,8 @@ export default function Admin() {
                           }}
                           className="flex-1 sm:flex-none btn-outline flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium"
                         >
-                          <Download className="h-4 w-4" />
-                          <span>View File</span>
+                          <FileText className="h-4 w-4" />
+                          <span>View Content</span>
                         </button>
                         <button
                           onClick={() => handleApprove(resource._id)}

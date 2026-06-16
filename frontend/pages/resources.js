@@ -227,14 +227,16 @@ export default function Resources() {
               <BookOpen className="h-4 w-4" aria-hidden="true" />
               <span>Read</span>
             </Link>
-            <button
-              onClick={() => handleDownload(resource._id, resource.title)}
-              aria-label={`Download ${resource.title}`}
-              className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors border border-gray-200"
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              <span>Download</span>
-            </button>
+            {resource.contentType !== 'article' && (
+              <button
+                onClick={() => handleDownload(resource._id, resource.title)}
+                aria-label={`Download ${resource.title}`}
+                className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors border border-gray-200"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                <span>Download</span>
+              </button>
+            )}
           </div>
           <button
             onClick={() => setRatingModal({ isOpen: true, resourceId: resource._id, rating: 0, comment: '' })}

@@ -147,6 +147,62 @@ router.post('/upload', protect, upload.single('file'), [
   }
 });
 
+// Submit an article (no file upload)
+router.post('/article', protect, [
+  body('title').trim().notEmpty().withMessage('Title is required'),
+  body('description').trim().notEmpty().withMessage('Description is required'),
+  body('subject').notEmpty().withMessage('Subject is required'),
+  body('gradeLevel').notEmpty().withMessage('Grade level is required'),
+  body('author').trim().notEmpty().withMessage('Author is required'),
+  body('licenseType').notEmpty().withMessage('License type is required'),
+  body('articleContent').trim().notEmpty().withMessage('Article content is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { title, description, subject, gradeLevel, author, licenseType, articleContent } = req.body;
+
+    const resource = await Resource.create({
+      title,
+      description,
+      subject,
+      gradeLevel,
+      author,
+      licenseType,
+      contentType: 'article',
+      articleContent,
+      fileType: 'Article',
+      fileUrl: '',
+      fileName: '',
+      fileSize: 0,
+      uploadedBy: req.user.id,
+      status: 'pending',
+      auditTrail: [{
+        action: 'uploaded',
+        performedBy: req.user.id,
+        details: 'Article submitted and pending approval'
+      }]
+    });
+
+    await SystemLog.create({
+      action: 'resource_uploaded',
+      details: `Article submitted: "${title}" — Pending admin approval`,
+      performedBy: req.user.id,
+      resourceTitle: title,
+      ipAddress: getIp(req),
+      userAgent: req.headers['user-agent']
+    });
+
+    res.status(201).json({ success: true, resource });
+  } catch (error) {
+    console.error('Article submit error:', error);
+    res.status(500).json({ success: false, message: 'Server error during article submission' });
+  }
+});
+
 // Get all approved resources with pagination
 router.get('/', async (req, res) => {
   try {
@@ -256,6 +312,7 @@ router.get('/:id/download', async (req, res) => {
     const resource = await Resource.findById(req.params.id);
     if (!resource) return res.status(404).json({ message: 'Resource not found' });
     if (resource.status !== 'approved') return res.status(403).json({ message: 'Resource not approved' });
+    if (resource.contentType === 'article') return res.status(400).json({ message: 'Articles cannot be downloaded as files' });
 
     // Increment download count here (single source of truth)
     resource.downloadCount += 1;
@@ -288,6 +345,7 @@ router.get('/:id/download/proxy', async (req, res) => {
     const resource = await Resource.findById(req.params.id);
     if (!resource) return res.status(404).json({ message: 'Resource not found' });
     if (resource.status !== 'approved') return res.status(403).json({ message: 'Resource not approved' });
+    if (resource.contentType === 'article') return res.status(400).json({ message: 'Articles do not have file attachments' });
 
     // getCloudinaryStreamUrl returns { url, isArchive }
     const { url: streamUrl, isArchive } = await getCloudinaryStreamUrl(resource);

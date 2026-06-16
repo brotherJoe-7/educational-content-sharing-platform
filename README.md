@@ -272,11 +272,13 @@ The full interactive API reference is available at `http://localhost:5000/docs` 
 
 | Feature | How to test |
 |---------|------------|
-| Read resource | Click **Read** on any resource card — opens the Cloudinary file URL in a new tab |
+| Read resource | Click **Read** on any resource card — opens the Cloudinary file URL or the Article Content in a new tab |
+| Mobile PDF Viewer | Access the site on a mobile device and click Read on a PDF to see the mobile-responsive PDF reader |
 | Download resource | Click **Download** on any resource card — the backend increments the counter and streams the file |
 | Rate resource | Click the star icon on any resource card — select 1-5 stars and submit (requires login) |
-| Upload resource | Log in, go to `/upload`, complete the form and attach a file (PDF, DOCX, PPT, etc.) |
-| Admin approve | Log in as admin, go to `/admin`, click Pending Reviews, click Approve |
+| Upload file | Log in, go to `/upload`, select **Upload File**, complete the form and attach a file (PDF, DOCX, PPT, etc.) |
+| Write Article | Log in, go to `/upload`, select **Write Article**, and use the rich-text editor to publish an article |
+| Admin approve | Log in as admin, go to `/admin`, click Pending Reviews, click Approve (or View Content to preview Articles) |
 | Admin reject | Same as above, click Reject and provide a reason |
 | Delete user | Admin dashboard, Users tab, click the delete button on any non-admin user |
 | Search | Use the search bar on the home page or resources page |

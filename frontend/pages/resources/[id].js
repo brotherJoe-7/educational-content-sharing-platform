@@ -68,7 +68,7 @@ export default function ResourceDetails() {
       if (!res.ok) throw new Error('Fetch failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      setPdfBlobUrl(url);
+      setPdfBlobUrl(url + '#view=FitH'); // Forces browser PDF viewer to fit to width
     } catch (err) {
       console.error('PDF blob error:', err);
     } finally {
@@ -212,9 +212,11 @@ export default function ResourceDetails() {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-gray-100">
-                  <button onClick={handleDownload} className="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm">
-                    <Download className="h-5 w-5 mr-2" /> Download ({resource.downloadCount})
-                  </button>
+                  {resource.contentType !== 'article' && (
+                    <button onClick={handleDownload} className="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm">
+                      <Download className="h-5 w-5 mr-2" /> Download ({resource.downloadCount})
+                    </button>
+                  )}
                   <button onClick={() => setRatingModal({ isOpen: true, rating: 0, comment: '' })} className="inline-flex items-center px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-medium transition-colors">
                     <Star className="h-5 w-5 mr-2 text-yellow-500" /> Rate ({resource.averageRating?.toFixed(1) || '0'})
                   </button>
@@ -242,16 +244,18 @@ export default function ResourceDetails() {
                   <span className="hidden sm:inline-flex text-sm text-yellow-600 font-medium bg-yellow-50 px-3 py-1 rounded-full border border-yellow-200">Preview may be limited</span>
                 )
               )}
-              {/* Open in new tab button as reliable fallback */}
-              <a
-                href={inlineViewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-colors"
-              >
-                <Share2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Open in Tab</span>
-              </a>
+              {/* Open in new tab button — only for files */}
+              {resource.contentType !== 'article' && (
+                <a
+                  href={inlineViewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Open in Tab</span>
+                </a>
+              )}
               {isFullscreen ? (
                 <>
                   <button 
@@ -277,8 +281,16 @@ export default function ResourceDetails() {
               )}
             </div>
           </div>
-          <div className={`${isFullscreen ? 'flex-1 w-full h-full' : 'min-h-[600px] w-full'} bg-gray-100 relative`}>
-            {['pdf'].includes(resource.fileType?.toLowerCase()) ? (
+          <div className={`${isFullscreen ? 'flex-1 w-full h-full overflow-auto' : 'h-[600px] sm:h-[800px] lg:h-[1000px] w-full'} bg-gray-100 relative`}>
+            {resource.contentType === 'article' ? (
+              <div className="bg-white p-6 sm:p-10 max-w-3xl mx-auto my-6 rounded-xl shadow-sm">
+                <div
+                  className="prose prose-blue max-w-none text-gray-800 leading-relaxed"
+                  style={{ fontFamily: 'Georgia, serif', fontSize: '17px', lineHeight: '1.8' }}
+                  dangerouslySetInnerHTML={{ __html: resource.articleContent }}
+                />
+              </div>
+            ) : ['pdf'].includes(resource.fileType?.toLowerCase()) ? (
               isMobile ? (
                 <MobilePdfViewer
                   proxyUrl={`${process.env.NEXT_PUBLIC_API_URL}/resources/${resource._id}/download/proxy?inline=true`}

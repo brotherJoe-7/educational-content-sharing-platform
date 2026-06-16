@@ -5,6 +5,7 @@ This guide provides step-by-step instructions for deploying the Educational Cont
 ## Prerequisites
 
 - MongoDB Atlas account (free tier)
+- Cloudinary account (for file storage)
 - Vercel account (for frontend)
 - Render account (for backend)
 - GitHub account
@@ -50,6 +51,9 @@ git push -u origin main
    - `MONGODB_URI`: Your MongoDB Atlas connection string
    - `JWT_SECRET`: Generate a secure random string (use: `openssl rand -base64 32`)
    - `JWT_EXPIRE`: 7d
+   - `CLOUDINARY_CLOUD_NAME`: Your Cloudinary Cloud Name
+   - `CLOUDINARY_API_KEY`: Your Cloudinary API Key
+   - `CLOUDINARY_API_SECRET`: Your Cloudinary API Secret
    - `NODE_ENV`: production
 6. Click "Deploy Web Service"
 7. Wait for deployment to complete
@@ -112,10 +116,12 @@ db.users.updateOne(
 
 1. Visit your frontend URL
 2. Test registration and login
-3. Test resource upload
-4. Login as admin and test moderation
-5. Test search and filter functionality
-6. Test download and sharing features
+3. Test file uploads (PDF, Word, etc.)
+4. Test writing and publishing a rich-text Article
+5. Test the Mobile PDF Viewer (access site on a phone and view a PDF)
+6. Login as admin and test moderation (approving/rejecting resources)
+7. Test search and filter functionality
+8. Test download and sharing features
 
 ## Monitoring and Maintenance
 

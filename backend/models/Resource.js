@@ -31,14 +31,24 @@ const resourceSchema = new mongoose.Schema({
     required: [true, 'Please provide a license type'],
     enum: ['Creative Commons BY', 'Creative Commons BY-SA', 'Creative Commons BY-NC', 'OER', 'Public Domain', 'Other']
   },
+  contentType: {
+    type: String,
+    enum: ['file', 'article'],
+    default: 'file'
+  },
+  articleContent: {
+    type: String, // stores rich HTML content
+    default: ''
+  },
   fileType: {
     type: String,
-    required: [true, 'Please provide a file type'],
-    enum: ['PDF', 'DOC', 'DOCX', 'PPT', 'PPTX', 'Other']
+    enum: ['PDF', 'DOC', 'DOCX', 'PPT', 'PPTX', 'TXT', 'PNG', 'JPG', 'Article', 'Other'],
+    required: false
   },
   fileUrl: {
     type: String,
-    required: [true, 'Please provide a file URL']
+    required: false,
+    default: ''
   },
   resourceType: {
     type: String,
@@ -52,11 +62,13 @@ const resourceSchema = new mongoose.Schema({
   },
   fileName: {
     type: String,
-    required: [true, 'Please provide a file name']
+    required: false,
+    default: ''
   },
   fileSize: {
     type: Number,
-    required: [true, 'Please provide file size']
+    required: false,
+    default: 0
   },
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
