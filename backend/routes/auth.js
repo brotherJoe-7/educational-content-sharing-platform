@@ -2,9 +2,13 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const SystemLog = require('../models/SystemLog');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Helper to get IP
+const getIp = (req) => req.headers['x-forwarded-for']?.split(',')[0] || req.ip || 'unknown';
 
 // Register
 router.post('/register', [
@@ -27,21 +31,24 @@ router.post('/register', [
 
     const { name, email, password, privacyConsent } = req.body;
 
-    // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      privacyConsent
+    const user = await User.create({ name, email, password, privacyConsent });
+
+    // Log registration
+    await SystemLog.create({
+      action: 'user_registered',
+      details: `New user registered: ${name} (${email})`,
+      performedBy: user._id,
+      performedByName: name,
+      performedByEmail: email,
+      ipAddress: getIp(req),
+      userAgent: req.headers['user-agent']
     });
 
-    // Generate token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -51,12 +58,7 @@ router.post('/register', [
     res.status(201).json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -77,23 +79,57 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // Check if user exists (include password for comparison)
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
+      // Log failed login (unknown user)
+      await SystemLog.create({
+        action: 'user_login_failed',
+        details: `Failed login attempt for unknown email: ${email}`,
+        performedByEmail: email,
+        ipAddress: getIp(req),
+        userAgent: req.headers['user-agent']
+      });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     if (user.status === 'suspended') {
+      await SystemLog.create({
+        action: 'user_login_suspended',
+        details: `Blocked login attempt by suspended user: ${user.name} (${email})`,
+        performedBy: user._id,
+        performedByName: user.name,
+        performedByEmail: email,
+        ipAddress: getIp(req),
+        userAgent: req.headers['user-agent']
+      });
       return res.status(403).json({ message: 'Your account has been suspended. Please contact the administrator.' });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      await SystemLog.create({
+        action: 'user_login_failed',
+        details: `Failed login attempt (wrong password) for: ${user.name} (${email})`,
+        performedBy: user._id,
+        performedByName: user.name,
+        performedByEmail: email,
+        ipAddress: getIp(req),
+        userAgent: req.headers['user-agent']
+      });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate token
+    // Successful login
+    await SystemLog.create({
+      action: 'user_login',
+      details: `User logged in: ${user.name} (${email}) — Role: ${user.role}`,
+      performedBy: user._id,
+      performedByName: user.name,
+      performedByEmail: email,
+      ipAddress: getIp(req),
+      userAgent: req.headers['user-agent']
+    });
+
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -103,12 +139,7 @@ router.post('/login', [
     res.json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -122,12 +153,7 @@ router.get('/me', protect, async (req, res) => {
     const user = await User.findById(req.user.id);
     res.json({
       success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

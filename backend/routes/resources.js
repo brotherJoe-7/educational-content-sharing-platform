@@ -2,9 +2,12 @@ const express = require('express');
 const multer = require('multer');
 const { body, validationResult } = require('express-validator');
 const Resource = require('../models/Resource');
+const SystemLog = require('../models/SystemLog');
 const { protect } = require('../middleware/auth');
 const { storage, cloudinary } = require('../config/cloudinary');
 const unzipper = require('unzipper');
+
+const getIp = (req) => req.headers['x-forwarded-for']?.split(',')[0] || req.ip || 'unknown';
 
 const router = express.Router();
 
@@ -127,10 +130,17 @@ router.post('/upload', protect, upload.single('file'), [
       }]
     });
 
-    res.status(201).json({
-      success: true,
-      resource
+    // Log the upload
+    await SystemLog.create({
+      action: 'resource_uploaded',
+      details: `Resource uploaded: "${title}" (${fileType}) — Pending admin approval`,
+      performedBy: req.user.id,
+      resourceTitle: title,
+      ipAddress: getIp(req),
+      userAgent: req.headers['user-agent']
     });
+
+    res.status(201).json({ success: true, resource });
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ success: false, message: 'Server error during upload' });
@@ -217,14 +227,19 @@ router.get('/:id', async (req, res) => {
     }
 
     const resourceData = resource.toObject();
-    // getCloudinaryStreamUrl returns { url, isArchive }
     const { url: fileUrl } = await getCloudinaryStreamUrl(resource);
     resourceData.fileUrl = fileUrl;
 
-    res.json({
-      success: true,
-      resource: resourceData
-    });
+    // Log resource view (fire-and-forget, don't await to keep response fast)
+    SystemLog.create({
+      action: 'resource_viewed',
+      details: `Resource viewed: "${resource.title}"`,
+      resourceTitle: resource.title,
+      ipAddress: getIp(req),
+      userAgent: req.headers['user-agent']
+    }).catch(() => {});
+
+    res.json({ success: true, resource: resourceData });
   } catch (error) {
     console.error('Get resource error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -246,13 +261,17 @@ router.get('/:id/download', async (req, res) => {
     resource.downloadCount += 1;
     await resource.save();
 
-    // Return the proxy URL so the browser downloads via our server
-    const proxyUrl = `${req.protocol}://${req.get('host')}/api/resources/${resource._id}/download/proxy`;
-    res.json({
-      success: true,
-      downloadUrl: proxyUrl,
-      fileName: resource.fileName
+    // Log the download
+    await SystemLog.create({
+      action: 'resource_downloaded',
+      details: `Resource downloaded: "${resource.title}" (total downloads: ${resource.downloadCount})`,
+      resourceTitle: resource.title,
+      ipAddress: getIp(req),
+      userAgent: req.headers['user-agent']
     });
+
+    const proxyUrl = `${req.protocol}://${req.get('host')}/api/resources/${resource._id}/download/proxy`;
+    res.json({ success: true, downloadUrl: proxyUrl, fileName: resource.fileName });
   } catch (error) {
     console.error('Download error:', error);
     res.status(500).json({ message: 'Server error during download' });
@@ -367,10 +386,17 @@ router.post('/:id/rating', protect, [
 
     await resource.save();
 
-    res.json({
-      success: true,
-      resource
+    // Log the rating
+    await SystemLog.create({
+      action: 'resource_rated',
+      details: `Resource rated: "${resource.title}" — ${rating} star${rating > 1 ? 's' : ''}${comment ? ' with comment' : ''}`,
+      performedBy: req.user.id,
+      resourceTitle: resource.title,
+      ipAddress: getIp(req),
+      userAgent: req.headers['user-agent']
     });
+
+    res.json({ success: true, resource });
   } catch (error) {
     console.error('Rating error:', error);
     res.status(500).json({ message: 'Server error' });

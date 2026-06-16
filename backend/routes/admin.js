@@ -500,46 +500,55 @@ router.put('/users/:id/status', protect, authorize('admin'), async (req, res) =>
   }
 });
 
-// Get system activity logs (derived from resource audit trails and system logs)
+// Get system activity logs
 router.get('/logs', protect, authorize('admin'), async (req, res) => {
   try {
-    const [resources, systemLogs] = await Promise.all([
-      Resource.find({ 'auditTrail.0': { $exists: true } })
-        .select('title auditTrail')
-        .populate('auditTrail.performedBy', 'name email'),
-      SystemLog.find().populate('performedBy', 'name email')
-    ]);
+    const limit = parseInt(req.query.limit) || 200;
 
-    let logs = [];
-    resources.forEach(res => {
-      res.auditTrail.forEach(log => {
-        logs.push({
-          resourceId: res._id,
-          resourceTitle: res.title,
+    // Primary source: SystemLog (covers auth, uploads, downloads, ratings, admin actions)
+    const systemLogs = await SystemLog.find()
+      .populate('performedBy', 'name email role')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    // Secondary source: resource audit trails (for legacy data)
+    const resources = await Resource.find({ 'auditTrail.0': { $exists: true } })
+      .select('title auditTrail')
+      .populate('auditTrail.performedBy', 'name email');
+
+    let auditLogs = [];
+    resources.forEach(r => {
+      r.auditTrail.forEach(log => {
+        auditLogs.push({
+          _id: log._id,
+          resourceId: r._id,
+          resourceTitle: r.title,
           action: log.action,
           details: log.details,
           performedBy: log.performedBy,
-          timestamp: log.createdAt || log.timestamp || new Date()
+          timestamp: log.createdAt || new Date()
         });
       });
     });
 
-    systemLogs.forEach(log => {
-      logs.push({
-        action: log.action,
-        details: log.details,
-        performedBy: log.performedBy,
-        timestamp: log.createdAt
-      });
-    });
+    // Map systemLogs to unified format
+    const formattedSystemLogs = systemLogs.map(log => ({
+      _id: log._id,
+      action: log.action,
+      details: log.details,
+      performedBy: log.performedBy,
+      performedByName: log.performedByName,
+      performedByEmail: log.performedByEmail,
+      resourceTitle: log.resourceTitle,
+      ipAddress: log.ipAddress,
+      timestamp: log.createdAt
+    }));
 
-    // Sort by most recent
-    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
-    res.json({
-      success: true,
-      logs: logs.slice(0, 50)
-    });
+    // Merge and sort, dedup by preferring systemLogs
+    const allLogs = [...formattedSystemLogs, ...auditLogs];
+    allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json({ success: true, logs: allLogs.slice(0, limit) });
   } catch (error) {
     console.error('Get logs error:', error);
     res.status(500).json({ message: 'Server error' });

@@ -855,33 +855,40 @@ export default function Admin() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200 text-xs sm:text-sm">
-                    {logs.map((log, i) => (
-                      <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    {logs.map((log, i) => {
+                      const getActionStyle = (action) => {
+                        if (action.includes('login') || action.includes('register') || action.includes('activated') || action.includes('promoted')) return 'bg-green-50 text-green-700';
+                        if (action.includes('upload') || action.includes('download') || action.includes('view')) return 'bg-blue-50 text-blue-700';
+                        if (action.includes('delete') || action.includes('reject') || action.includes('suspend') || action.includes('failed')) return 'bg-red-50 text-red-700';
+                        if (action.includes('rated') || action.includes('approved')) return 'bg-yellow-50 text-yellow-700';
+                        return 'bg-gray-100 text-gray-700';
+                      };
+                      
+                      const performedByText = log.performedBy?.name || log.performedByName || log.performedByEmail || 'System / Guest';
+                      
+                      return (
+                      <tr key={log._id || i} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-gray-500">
                           {new Date(log.timestamp).toLocaleString()}
                         </td>
                         <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-md uppercase tracking-wide
-                            ${log.action === 'uploaded' ? 'bg-blue-50 text-blue-700' :
-                              log.action === 'approved' ? 'bg-green-50 text-green-700' :
-                              log.action === 'rejected' ? 'bg-red-50 text-red-700' :
-                              log.action === 'file_accessed' ? 'bg-gray-100 text-gray-700' :
-                              'bg-purple-50 text-purple-700'}`}
-                          >
-                            {log.action}
+                          <span className={`inline-flex px-2 py-1 text-[10px] sm:text-xs font-semibold rounded-md uppercase tracking-wide ${getActionStyle(log.action)}`}>
+                            {log.action.replace(/_/g, ' ')}
                           </span>
                         </td>
-                        <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-gray-900">
-                          {log.resourceTitle}
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-gray-900 max-w-[150px] sm:max-w-[200px] truncate" title={log.resourceTitle || '-'}>
+                          {log.resourceTitle || '-'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500 max-w-[120px] sm:max-w-[150px] truncate" title={performedByText}>
+                          {performedByText}
                         </td>
                         <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500">
-                          {log.performedBy?.name || 'System'}
-                        </td>
-                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500">
-                          {log.details}
+                          <p className="line-clamp-2" title={log.details}>{log.details}</p>
+                          {log.ipAddress && <span className="text-[10px] text-gray-400 mt-1 block">IP: {log.ipAddress}</span>}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                     {logs.length === 0 && (
                       <tr>
                         <td colSpan="5" className="px-6 py-8 text-center text-gray-500 font-medium">

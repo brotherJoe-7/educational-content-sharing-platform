@@ -280,6 +280,26 @@ The full interactive API reference is available at `http://localhost:5000/docs` 
 | Admin reject | Same as above, click Reject and provide a reason |
 | Delete user | Admin dashboard, Users tab, click the delete button on any non-admin user |
 | Search | Use the search bar on the home page or resources page |
+| Activity Logs | Admin dashboard, Logs tab — displays chronological list of all platform actions |
+
+---
+
+## Enhanced Activity Logging
+
+The platform automatically tracks and securely logs all significant user activities across the system, visible only to administrators in the **Activity Logs** dashboard tab. This includes:
+
+### Captured Events:
+- **Authentication**: `user_registered`, `user_login`, `user_login_failed`, `user_login_suspended`, `user_logout`
+- **Content Engagement**: `resource_viewed`, `resource_downloaded`, `resource_rated`
+- **Content Moderation**: `resource_uploaded`, `resource_approved`, `resource_rejected`, `deleted_resource`, `file_replaced`
+- **User Management**: `user_promoted`, `user_suspended`, `user_activated`, `user_deleted`
+
+### Logged Data Points:
+- Timestamp of the action
+- The specific action performed
+- Target resource or user affected
+- The identity of the user who performed the action (Name, Email, Role)
+- **Security Data**: IP Address and User Agent of the request
 
 ---
 
