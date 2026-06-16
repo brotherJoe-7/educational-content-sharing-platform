@@ -286,7 +286,7 @@ export default function ResourceDetails() {
                       For the best reading experience on your phone, open the document in your native PDF viewer.
                     </p>
                   </div>
-                  <a href={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(resource.fileUrl)}`} target="_blank" rel="noopener noreferrer"
+                  <a href={`https://docs.google.com/viewer?url=${encodeURIComponent(resource.fileUrl)}`} target="_blank" rel="noopener noreferrer"
                      className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md transition-transform active:scale-95">
                     <BookOpen className="h-5 w-5" /><span>Read Document</span>
                   </a>
