@@ -4,6 +4,10 @@ import Link from 'next/link';
 import { ArrowLeft, Download, Star, Share2, FileText, UserIcon, Clock, Maximize, Minimize, X, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import dynamic from 'next/dynamic';
+
+// Load the mobile PDF viewer only on client side (no SSR — canvas API not available server-side)
+const MobilePdfViewer = dynamic(() => import('../../components/MobilePdfViewer'), { ssr: false });
 
 export default function ResourceDetails() {
   const router = useRouter();
@@ -273,24 +277,12 @@ export default function ResourceDetails() {
               )}
             </div>
           </div>
-          <div className={`${isFullscreen ? 'flex-1 w-full h-full' : 'h-[600px] w-full'} bg-gray-100 relative`}>
+          <div className={`${isFullscreen ? 'flex-1 w-full h-full' : 'min-h-[600px] w-full'} bg-gray-100 relative`}>
             {['pdf'].includes(resource.fileType?.toLowerCase()) ? (
               isMobile ? (
-                <div className="flex flex-col items-center justify-center h-full bg-white px-6 text-center space-y-5">
-                  <div className="bg-blue-50 p-4 rounded-full">
-                    <FileText className="h-12 w-12 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Mobile Reading Mode</h3>
-                    <p className="text-gray-500 max-w-sm mx-auto">
-                      For the best reading experience on your phone, open the document in your native PDF viewer.
-                    </p>
-                  </div>
-                  <a href={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(resource.fileUrl)}`} target="_blank" rel="noopener noreferrer"
-                     className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md transition-transform active:scale-95">
-                    <BookOpen className="h-5 w-5" /><span>Read Document</span>
-                  </a>
-                </div>
+                <MobilePdfViewer
+                  proxyUrl={`${process.env.NEXT_PUBLIC_API_URL}/resources/${resource._id}/download/proxy?inline=true`}
+                />
               ) : pdfLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-3">
                   <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
