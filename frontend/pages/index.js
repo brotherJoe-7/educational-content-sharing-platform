@@ -287,7 +287,7 @@ export default function Home() {
       {/* ── Licensing ── */}
       <div style={{ background: '#fff' }}>
         <div className="section">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
             <div>
               <div className="section-label">Open & Licensed</div>
               <h2 className="section-title">Trusted, Legal & Ethical</h2>
