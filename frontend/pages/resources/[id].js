@@ -13,6 +13,8 @@ export default function ResourceDetails() {
   const [resource, setResource] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [ratingModal, setRatingModal] = useState({ isOpen: false, rating: 0, comment: '' });
 
   useEffect(() => {
@@ -20,6 +22,14 @@ export default function ResourceDetails() {
       fetchResourceDetails();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (resource && resource.fileType?.toLowerCase() === 'pdf') {
+      loadPdfBlob(resource._id);
+    }
+    // Cleanup blob URL on unmount
+    return () => { if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl); };
+  }, [resource]);
 
   const fetchResourceDetails = async () => {
     try {
@@ -35,6 +45,23 @@ export default function ResourceDetails() {
       toast.error('Failed to fetch resource details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch the PDF as a blob to create a same-origin URL (avoids cross-origin download issue)
+  const loadPdfBlob = async (resourceId) => {
+    setPdfLoading(true);
+    try {
+      const proxyUrl = `${process.env.NEXT_PUBLIC_API_URL}/resources/${resourceId}/download/proxy?inline=true`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('Fetch failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfBlobUrl(url);
+    } catch (err) {
+      console.error('PDF blob error:', err);
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -238,36 +265,32 @@ export default function ResourceDetails() {
             </div>
           </div>
           <div className={`${isFullscreen ? 'flex-1 w-full h-full' : 'h-[600px] w-full'} bg-gray-100 relative`}>
-            {/* Use <object> for best cross-browser PDF support, iframe as fallback */}
             {['pdf'].includes(resource.fileType?.toLowerCase()) ? (
-              <object
-                data={inlineViewUrl}
-                type="application/pdf"
-                className="w-full h-full border-0"
-              >
-                {/* Fallback if browser can't render PDF natively */}
+              pdfLoading ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-3">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+                  <p className="text-sm font-medium">Loading document preview...</p>
+                </div>
+              ) : pdfBlobUrl ? (
+                <iframe
+                  src={pdfBlobUrl}
+                  className="w-full h-full border-0"
+                  title={resource.title}
+                />
+              ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
                   <FileText className="h-16 w-16 text-gray-300" />
-                  <p className="text-lg font-medium">Your browser cannot preview this PDF inline.</p>
-                  <a
-                    href={inlineViewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    <Share2 className="h-5 w-5" />
-                    <span>Open PDF in New Tab</span>
+                  <p className="text-lg font-medium">Could not load preview.</p>
+                  <a href={inlineViewUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
+                    <Share2 className="h-5 w-5" /><span>Open PDF in New Tab</span>
                   </a>
                 </div>
-              </object>
+              )
             ) : (['png', 'jpg', 'jpeg'].includes(resource.fileType?.toLowerCase()) ? (
               <img src={inlineViewUrl} alt={resource.title} className="w-full h-full object-contain" />
             ) : (
-              <iframe 
-                src={inlineViewUrl} 
-                className="w-full h-full border-0" 
-                title="Resource Preview"
-              />
+              <iframe src={inlineViewUrl} className="w-full h-full border-0" title="Resource Preview" />
             ))}
           </div>
         </div>
