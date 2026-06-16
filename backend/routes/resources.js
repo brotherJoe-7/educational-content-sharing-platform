@@ -309,7 +309,13 @@ router.get('/:id/download/proxy', async (req, res) => {
         });
     } else {
       // Direct stream
-      const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+      let contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+      
+      // Override octet-stream for known extensions so the browser can view it inline
+      if (resource.fileName.toLowerCase().endsWith('.pdf')) {
+        contentType = 'application/pdf';
+      }
+      
       const contentLength = upstream.headers.get('content-length');
       res.setHeader('Content-Type', contentType);
       if (contentLength) res.setHeader('Content-Length', contentLength);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { ArrowLeft, Download, Star, Share2, FileText, UserIcon, Clock, Maximize, Minimize } from 'lucide-react';
+import { ArrowLeft, Download, Star, Share2, FileText, UserIcon, Clock, Maximize, Minimize, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -202,16 +202,29 @@ export default function ResourceDetails() {
                   <span className="hidden sm:inline-flex text-sm text-yellow-600 font-medium bg-yellow-50 px-3 py-1 rounded-full border border-yellow-200">Preview may be limited</span>
                 )
               )}
-              <button 
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="flex items-center space-x-1 px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-              >
-                {isFullscreen ? (
-                  <><Minimize className="h-4 w-4" /> <span className="hidden sm:inline">Exit Fullscreen</span></>
-                ) : (
-                  <><Maximize className="h-4 w-4" /> <span className="hidden sm:inline">Fullscreen</span></>
-                )}
-              </button>
+              {isFullscreen ? (
+                <>
+                  <button 
+                    onClick={() => setIsFullscreen(false)}
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Minimize className="h-4 w-4" /> <span className="hidden sm:inline">Minimize</span>
+                  </button>
+                  <button 
+                    onClick={() => setIsFullscreen(false)}
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <X className="h-4 w-4" /> <span className="hidden sm:inline">Close</span>
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => setIsFullscreen(true)}
+                  className="flex items-center space-x-1 px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Maximize className="h-4 w-4" /> <span className="hidden sm:inline">Fullscreen</span>
+                </button>
+              )}
             </div>
           </div>
           <div className={`${isFullscreen ? 'flex-1 w-full h-full' : 'h-[600px] w-full'} bg-gray-100 relative`}>
