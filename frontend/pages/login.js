@@ -28,19 +28,19 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-gray-50" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         .btn-blue { background: #2563eb; transition: background 0.15s; }
         .btn-blue:hover { background: #1d4ed8; }
         .input-field { transition: border-color 0.15s, box-shadow 0.15s; border: 1px solid #e5e7eb; }
         .input-field:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-      `}</style>
+      `}} />
 
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-5/12 bg-gray-900 flex-col justify-between p-12">
         <Link href="/" className="flex items-center space-x-2">
           <BookOpen className="h-5 w-5 text-blue-400" />
-          <span className="text-white font-bold">EduShare Sierra Leone</span>
+          <span className="text-white font-bold">Open Content Sierra Leone</span>
         </Link>
 
         <div>
@@ -64,7 +64,7 @@ export default function Login() {
           </ul>
         </div>
 
-        <p className="text-gray-600 text-sm">© 2026 EduShare Sierra Leone</p>
+        <p className="text-gray-600 text-sm">© 2026 Open Content Sierra Leone</p>
       </div>
 
       {/* Right form */}
@@ -73,7 +73,7 @@ export default function Login() {
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center space-x-2 mb-8 justify-center">
             <BookOpen className="h-5 w-5 text-blue-600" />
-            <span className="font-bold text-gray-900">EduShare Sierra Leone</span>
+            <span className="font-bold text-gray-900">Open Content Sierra Leone</span>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">

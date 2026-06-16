@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Resource = require('../models/Resource');
 const User = require('../models/User');
+const SystemLog = require('../models/SystemLog');
 const { protect, authorize } = require('../middleware/auth');
 const { cloudinary } = require('../config/cloudinary');
 const multer = require('multer');
@@ -29,34 +30,34 @@ const reupload = multer({
 
 const router = express.Router();
 
-const buildCloudinaryUrl = (resource) => {
-  if (!resource.cloudinaryPublicId) {
-    return resource.fileUrl;
-  }
-
-  const resourceType = resource.resourceType || (['JPG', 'PNG'].includes(resource.fileType) ? 'image' : 'raw');
-  const format = resource.fileName?.split('.').pop();
-  const options = {
-    resource_type: resourceType,
-    secure: true
-  };
-  // Sign raw/document URLs for authorized admin access
-  if (resourceType === 'raw' || ['PDF', 'DOC', 'DOCX', 'PPT', 'PPTX', 'TXT'].includes(resource.fileType)) {
-    options.sign_url = true;
-    options.type = 'authenticated';
-  }
-  if (format) options.format = format.toLowerCase();
-
+// Async helper: fetch the real Cloudinary URL via Admin API (handles strict delivery)
+const getCloudinaryStreamUrl = async (resource) => {
+  if (!resource.cloudinaryPublicId) return { url: resource.fileUrl, isArchive: false };
+  const resourceType = resource.resourceType || 'raw';
   try {
-    if (options.sign_url) {
-      return cloudinary.utils.private_download_url(resource.cloudinaryPublicId, { resource_type: resourceType, format: options.format });
+    if (resourceType === 'raw') {
+      const info = await cloudinary.api.resource(resource.cloudinaryPublicId, {
+        resource_type: 'raw', type: 'upload'
+      });
+      return { url: info.secure_url, isArchive: false };
     }
-    return cloudinary.url(resource.cloudinaryPublicId, options);
-  } catch (error) {
-    console.error('Cloudinary URL build failed:', error);
-    return resource.fileUrl;
+    // image-type assets blocked by strict delivery — use archive
+    const archiveUrl = cloudinary.utils.download_archive_url({
+      public_ids: [resource.cloudinaryPublicId],
+      resource_type: resourceType,
+      target_format: 'zip',
+      flatten_folders: true,
+      use_original_filename: true,
+      async: false
+    });
+    return { url: archiveUrl, isArchive: true };
+  } catch (err) {
+    console.error('[Cloudinary] Admin lookup failed:', err.error?.message || err.message);
+    return { url: resource.fileUrl, isArchive: false };
   }
 };
+
+
 
 // Get all pending resources
 router.get('/resources/pending', protect, authorize('admin'), async (req, res) => {
@@ -178,6 +179,49 @@ router.put('/resources/:id/reject', protect, authorize('admin'), [
   }
 });
 
+// Delete a resource
+router.delete('/resources/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid resource ID format' });
+    }
+
+    const resource = await Resource.findById(req.params.id);
+    if (!resource) {
+      return res.status(404).json({ success: false, message: 'Resource not found' });
+    }
+
+    // Delete from Cloudinary if public ID exists
+    if (resource.cloudinaryPublicId) {
+      try {
+        await cloudinary.uploader.destroy(resource.cloudinaryPublicId, {
+          resource_type: resource.resourceType === 'raw' ? 'raw' : 'image'
+        });
+      } catch (cloudErr) {
+        console.error('Cloudinary deletion error:', cloudErr);
+        // Continue even if cloudinary deletion fails to ensure DB is cleaned up
+      }
+    }
+
+    await Resource.findByIdAndDelete(req.params.id);
+
+    // Log the deletion
+    await SystemLog.create({
+      action: 'deleted_resource',
+      details: `Deleted resource: ${resource.title}`,
+      performedBy: req.user.id
+    });
+
+    res.json({
+      success: true,
+      message: 'Resource deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete resource error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Get all users (admin only) - restrict sensitive data
 router.get('/users', protect, authorize('admin'), async (req, res) => {
   try {
@@ -222,21 +266,17 @@ router.get('/resources/:id/file', protect, authorize('admin'), async (req, res) 
     });
     await resource.save();
 
-    const fileUrl = buildCloudinaryUrl(resource);
-    // If Authorization header is present (admin AJAX or client), return the URL so frontend can open it
-    // This avoids redirecting the browser directly to Cloudinary which may return 401.
+    const { url: fileUrl } = await getCloudinaryStreamUrl(resource);
     const hasAuthHeader = !!req.headers.authorization;
     if (hasAuthHeader) {
       return res.json({ success: true, fileUrl });
     }
 
-    // If request expects JSON (explicit Accept), also return JSON
     const acceptsJson = req.headers.accept && req.headers.accept.indexOf('application/json') !== -1;
     if (acceptsJson) {
       return res.json({ success: true, fileUrl });
     }
 
-    // Fallback: redirect (for direct server-side requests)
     res.redirect(fileUrl);
   } catch (error) {
     console.error('Get file error:', error);
@@ -254,7 +294,7 @@ router.get('/resources/:id/file/url', protect, authorize('admin'), async (req, r
     if (!resource) return res.status(404).json({ success: false, message: 'Resource not found' });
     if (resource.status === 'rejected') return res.status(403).json({ success: false, message: 'Cannot access rejected resource file' });
 
-    const fileUrl = buildCloudinaryUrl(resource);
+    const { url: fileUrl } = await getCloudinaryStreamUrl(resource);
     return res.json({ success: true, fileUrl });
   } catch (error) {
     console.error('Get file URL error:', error);
@@ -334,6 +374,12 @@ router.put('/users/:id/promote', protect, authorize('admin'), async (req, res) =
     // Log the promotion action
     console.log(`[AUDIT] User ${req.user.id} promoted user ${user._id} from ${previousRole} to admin at ${new Date().toISOString()}`);
 
+    await SystemLog.create({
+      action: 'promoted_user',
+      details: `Promoted user ${user.email} to administrator`,
+      performedBy: req.user.id
+    });
+
     res.json({
       success: true,
       user: {
@@ -345,6 +391,116 @@ router.put('/users/:id/promote', protect, authorize('admin'), async (req, res) =
     });
   } catch (error) {
     console.error('Promote user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete a user
+router.delete('/users/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID format' });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (user._id.toString() === req.user.id) {
+      return res.status(400).json({ success: false, message: 'Cannot delete yourself' });
+    }
+    
+    // Optional: Delete user's resources or mark them as suspended
+    // For now, we will just delete the user
+    await User.findByIdAndDelete(req.params.id);
+    
+    await SystemLog.create({
+      action: 'deleted_user',
+      details: `Deleted user ${user.email}`,
+      performedBy: req.user.id
+    });
+
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Suspend or Activate a user
+router.put('/users/:id/status', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { status } = req.body; // 'active' or 'suspended'
+    if (!['active', 'suspended'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID format' });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (user._id.toString() === req.user.id) {
+      return res.status(400).json({ success: false, message: 'Cannot modify your own status' });
+    }
+    if (user.email === 'admin@educonnectsl.org') {
+      return res.status(403).json({ success: false, message: 'Cannot suspend the root administrator' });
+    }
+    
+    user.status = status;
+    await user.save();
+    
+    await SystemLog.create({
+      action: status === 'suspended' ? 'suspended_user' : 'activated_user',
+      details: `${status === 'suspended' ? 'Suspended' : 'Activated'} user ${user.email}`,
+      performedBy: req.user.id
+    });
+
+    res.json({ success: true, message: `User ${status} successfully`, user });
+  } catch (error) {
+    console.error('Change user status error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Get system activity logs (derived from resource audit trails and system logs)
+router.get('/logs', protect, authorize('admin'), async (req, res) => {
+  try {
+    const [resources, systemLogs] = await Promise.all([
+      Resource.find({ 'auditTrail.0': { $exists: true } })
+        .select('title auditTrail')
+        .populate('auditTrail.performedBy', 'name email'),
+      SystemLog.find().populate('performedBy', 'name email')
+    ]);
+
+    let logs = [];
+    resources.forEach(res => {
+      res.auditTrail.forEach(log => {
+        logs.push({
+          resourceId: res._id,
+          resourceTitle: res.title,
+          action: log.action,
+          details: log.details,
+          performedBy: log.performedBy,
+          timestamp: log.createdAt || log.timestamp || new Date()
+        });
+      });
+    });
+
+    systemLogs.forEach(log => {
+      logs.push({
+        action: log.action,
+        details: log.details,
+        performedBy: log.performedBy,
+        timestamp: log.createdAt
+      });
+    });
+
+    // Sort by most recent
+    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    res.json({
+      success: true,
+      logs: logs.slice(0, 50)
+    });
+  } catch (error) {
+    console.error('Get logs error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -25,6 +25,11 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user'
   },
+  status: {
+    type: String,
+    enum: ['active', 'suspended'],
+    default: 'active'
+  },
   privacyConsent: {
     type: Boolean,
     required: [true, 'Privacy consent is required'],

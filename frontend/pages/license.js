@@ -12,7 +12,7 @@ export default function License() {
               <Link href="/">
                 <BookOpen className="h-8 w-8 text-blue-600 cursor-pointer" />
               </Link>
-              <span className="ml-2 text-xl font-bold text-gray-800">EduShare Sierra Leone</span>
+              <span className="ml-2 text-xl font-bold text-gray-800">Open Content Sierra Leone</span>
             </div>
             <div className="flex items-center">
               <Link href="/" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium flex items-center">
@@ -34,7 +34,7 @@ export default function License() {
 
           <div className="prose prose-lg max-w-none">
             <p className="text-gray-600 mb-6">
-              Copyright (c) 2026 EduShare Sierra Leone
+              Copyright (c) 2026 Open Content Sierra Leone
             </p>
 
             <p className="text-gray-600 mb-4">
@@ -64,7 +64,7 @@ export default function License() {
             <div className="mt-8 p-6 bg-green-50 border-l-4 border-green-500 rounded-lg">
               <h2 className="text-xl font-semibold text-green-800 mb-3">Why MIT License?</h2>
               <p className="text-green-700 mb-3">
-                The MIT License was chosen for EduShare Sierra Leone because:
+                The MIT License was chosen for Open Content Sierra Leone because:
               </p>
               <ul className="list-disc pl-6 text-green-700 space-y-2">
                 <li><strong>Permissive:</strong> Allows maximum freedom for use, modification, and distribution</li>

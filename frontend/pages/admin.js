@@ -17,6 +17,7 @@ export default function Admin() {
   const [pendingResources, setPendingResources] = useState([]);
   const [allResources, setAllResources] = useState([]);
   const [users, setUsers] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
   const [rejectReason, setRejectReason] = useState('');
@@ -39,17 +40,19 @@ export default function Admin() {
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
 
-      const [statsRes, pendingRes, allRes, usersRes] = await Promise.all([
+      const [statsRes, pendingRes, allRes, usersRes, logsRes] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats`, { headers }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/pending`, { headers }),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/all`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, { headers })
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, { headers }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/logs`, { headers })
       ]);
 
       const statsData = await statsRes.json();
       const pendingData = await pendingRes.json();
       const allData = await allRes.json();
       const usersData = await usersRes.json();
+      const logsData = await logsRes.json();
 
       if (statsData.success) {
         setStats(statsData.stats);
@@ -58,6 +61,7 @@ export default function Admin() {
       if (pendingData.success) setPendingResources(pendingData.resources);
       if (allData.success) setAllResources(allData.resources);
       if (usersData.success) setUsers(usersData.users);
+      if (logsData.success) setLogs(logsData.logs || []);
     } catch (error) {
       toast.error('Failed to fetch admin data');
     } finally {
@@ -139,6 +143,81 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to completely remove this user? This cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('User deleted successfully');
+        fetchData(); // Refresh data
+      } else {
+        toast.error(result.message || 'Deletion failed');
+      }
+    } catch (error) {
+      console.error('Deletion error:', error);
+      toast.error('Deletion failed. Please try again.');
+    }
+  };
+
+  const handleSuspendUser = async (userId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}/status`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`User ${newStatus === 'suspended' ? 'suspended' : 'activated'} successfully`);
+        fetchData();
+      } else {
+        toast.error(result.message || 'Status change failed');
+      }
+    } catch (error) {
+      console.error('Status change error:', error);
+      toast.error('Status change failed. Please try again.');
+    }
+  };
+
+  const handleDeleteResource = async (resourceId) => {
+    if (!window.confirm('Are you sure you want to completely remove this resource? This cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/resources/${resourceId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Resource deleted successfully');
+        fetchData(); // Refresh data
+      } else {
+        toast.error(result.message || 'Deletion failed');
+      }
+    } catch (error) {
+      console.error('Resource deletion error:', error);
+      toast.error('Deletion failed. Please try again.');
+    }
+  };
+
   const handleLogout = () => {
     logout();
     router.push('/');
@@ -201,6 +280,7 @@ export default function Admin() {
     { id: 'pending', icon: Clock, label: 'Pending Reviews', count: pendingResources.length },
     { id: 'resources', icon: FileText, label: 'All Resources' },
     { id: 'users', icon: Users, label: 'User Management' },
+    { id: 'logs', icon: Shield, label: 'Activity Logs' },
   ];
 
   const StatCard = ({ title, value, icon: Icon, colorClass }) => (
@@ -217,13 +297,13 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         .btn-blue { background: #2563eb; transition: background 0.15s; color: white; }
         .btn-blue:hover { background: #1d4ed8; }
         .btn-outline { border: 1px solid #e5e7eb; color: #374151; transition: all 0.15s; background: white; }
         .btn-outline:hover { border-color: #d1d5db; background: #f9fafb; }
-      `}</style>
+      `}} />
 
       {/* Mobile menu button */}
       <button
@@ -239,7 +319,7 @@ export default function Admin() {
         <div className="p-6 border-b border-gray-800">
           <Link href="/" className="flex items-center space-x-3">
             <BookOpen className="h-6 w-6 text-blue-500" />
-            <span className="text-lg font-bold">EduShare Admin</span>
+            <span className="text-lg font-bold">Open Content Admin</span>
           </Link>
         </div>
 
@@ -350,58 +430,87 @@ export default function Admin() {
                 />
               </div>
 
-              {/* Analytics Section */}
-              {analytics && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Resources by Subject */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
-                      <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
-                      Resources by Subject
-                    </h3>
-                    <div className="space-y-4">
-                      {analytics.resourcesBySubject?.slice(0, 5).map((item) => (
-                        <div key={item._id}>
-                          <div className="flex justify-between text-sm mb-1.5">
-                            <span className="text-gray-700 font-medium">{item._id}</span>
-                            <span className="font-bold text-gray-900">{item.count}</span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full"
-                              style={{ width: `${Math.max(5, (item.count / stats.totalResources) * 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              {/* Growth & Analytics */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                  {/* Resources by Grade */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
-                      <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-                      Resources by Grade Level
-                    </h3>
-                    <div className="space-y-4">
-                      {analytics.resourcesByGrade?.slice(0, 5).map((item) => (
-                        <div key={item._id}>
-                          <div className="flex justify-between text-sm mb-1.5">
-                            <span className="text-gray-700 font-medium">{item._id}</span>
-                            <span className="font-bold text-gray-900">{item.count}</span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                            <div
-                              className="bg-green-600 h-2.5 rounded-full"
-                              style={{ width: `${Math.max(5, (item.count / stats.totalResources) * 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      ))}
+                {/* Growth Card */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2 text-indigo-600" />
+                    Growth Analytics
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">User and resource growth trends</p>
+                  <div className="space-y-5">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                      <span className="text-gray-600 font-medium text-sm">New Uploads (7d)</span>
+                      <span className="font-bold text-indigo-600 text-xl">+{stats.uploadsLastWeek || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                      <span className="text-gray-600 font-medium text-sm">New Uploads (30d)</span>
+                      <span className="font-bold text-indigo-600 text-xl">+{stats.uploadsLastMonth || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                      <span className="text-gray-600 font-medium text-sm">Active Users (30d)</span>
+                      <span className="font-bold text-green-600 text-xl">{stats.activeUsers || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 font-medium text-sm">Rejected Resources</span>
+                      <span className="font-bold text-red-500 text-xl">{stats.rejectedResources || 0}</span>
                     </div>
                   </div>
                 </div>
-              )}
+
+                {/* Resources by Subject */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+                    <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+                    Resources by Subject
+                  </h3>
+                  <div className="space-y-4">
+                    {analytics?.resourcesBySubject?.slice(0, 5).map((item) => (
+                      <div key={item._id}>
+                        <div className="flex justify-between text-sm mb-1.5">
+                          <span className="text-gray-700 font-medium">{item._id}</span>
+                          <span className="font-bold text-gray-900">{item.count}</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            style={{ width: `${Math.max(5, (item.count / Math.max(stats.totalResources, 1)) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    {!analytics?.resourcesBySubject?.length && <p className="text-gray-400 text-sm">No data yet</p>}
+                  </div>
+                </div>
+
+                {/* Resources by Grade */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
+                    By Grade Level
+                  </h3>
+                  <div className="space-y-4">
+                    {analytics?.resourcesByGrade?.slice(0, 5).map((item) => (
+                      <div key={item._id}>
+                        <div className="flex justify-between text-sm mb-1.5">
+                          <span className="text-gray-700 font-medium">{item._id}</span>
+                          <span className="font-bold text-gray-900">{item.count}</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-green-600 h-2 rounded-full transition-all"
+                            style={{ width: `${Math.max(5, (item.count / Math.max(stats.totalResources, 1)) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    {!analytics?.resourcesByGrade?.length && <p className="text-gray-400 text-sm">No data yet</p>}
+                  </div>
+                </div>
+
+              </div>
             </div>
           )}
 
@@ -566,6 +675,7 @@ export default function Admin() {
                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject & Grade</th>
                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Metrics</th>
+                      <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
@@ -610,11 +720,20 @@ export default function Admin() {
                             <span className="flex items-center"><Star className="w-3.5 h-3.5 mr-1.5 text-yellow-400" /> {resource.averageRating?.toFixed(1) || '-'}</span>
                           </div>
                         </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleDeleteResource(resource._id)}
+                            className="inline-flex items-center space-x-1.5 btn-outline px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                            <span>Delete</span>
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {allResources.length === 0 && (
                       <tr>
-                        <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                           No resources found.
                         </td>
                       </tr>
@@ -658,24 +777,51 @@ export default function Admin() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wide border ${
-                            userItem.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-100 text-gray-700 border-gray-200'
-                          }`}>
-                            {userItem.role}
-                          </span>
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className={`inline-flex px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wide border ${
+                              userItem.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-100 text-gray-700 border-gray-200'
+                            }`}>
+                              {userItem.role}
+                            </span>
+                            {userItem.status === 'suspended' && (
+                              <span className="inline-flex px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wide border bg-red-50 text-red-700 border-red-200">
+                                Suspended
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          {userItem.role !== 'admin' ? (
-                            <button
-                              onClick={() => handlePromote(userItem._id)}
-                              className="inline-flex items-center space-x-1.5 btn-outline px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors"
-                            >
-                              <Shield className="h-4 w-4" />
-                              <span>Make Admin</span>
-                            </button>
-                          ) : (
-                            <span className="text-sm text-gray-400 italic">Administrator</span>
-                          )}
+                          <div className="flex items-center justify-end space-x-2">
+                            {userItem._id !== user?.id && userItem.email !== 'admin@educonnectsl.org' ? (
+                              <>
+                                {userItem.role !== 'admin' && (
+                                  <button
+                                    onClick={() => handlePromote(userItem._id)}
+                                    className="inline-flex items-center space-x-1.5 btn-outline px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                    <span>Make Admin</span>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleSuspendUser(userItem._id, userItem.status === 'suspended' ? 'active' : 'suspended')}
+                                  className="inline-flex items-center space-x-1.5 btn-outline px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                                >
+                                  {userItem.status === 'suspended' ? <Check className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                                  <span>{userItem.status === 'suspended' ? 'Activate' : 'Suspend'}</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(userItem._id)}
+                                  className="inline-flex items-center space-x-1.5 btn-outline px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors"
+                                >
+                                  <X className="h-4 w-4" />
+                                  <span>Delete</span>
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-sm text-gray-400 italic">Protected</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -684,6 +830,67 @@ export default function Admin() {
               </div>
             </div>
           )}
+
+          {/* Activity Logs Tab */}
+          {activeTab === 'logs' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-gray-500" /> System Activity Logs
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Timestamp</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Resource</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Performed By</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200 text-xs sm:text-sm">
+                    {logs.map((log, i) => (
+                      <tr key={i} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-gray-500">
+                          {new Date(log.timestamp).toLocaleString()}
+                        </td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-md uppercase tracking-wide
+                            ${log.action === 'uploaded' ? 'bg-blue-50 text-blue-700' :
+                              log.action === 'approved' ? 'bg-green-50 text-green-700' :
+                              log.action === 'rejected' ? 'bg-red-50 text-red-700' :
+                              log.action === 'file_accessed' ? 'bg-gray-100 text-gray-700' :
+                              'bg-purple-50 text-purple-700'}`}
+                          >
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-gray-900">
+                          {log.resourceTitle}
+                        </td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500">
+                          {log.performedBy?.name || 'System'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-500">
+                          {log.details}
+                        </td>
+                      </tr>
+                    ))}
+                    {logs.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500 font-medium">
+                          No activity logs found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 

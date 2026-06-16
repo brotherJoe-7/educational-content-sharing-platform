@@ -73,6 +73,47 @@ app.get('/', (req, res) => {
   });
 });
 
+// Docs route
+app.get('/docs', (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>API Documentation</title>
+        <style>
+          body { font-family: system-ui, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; color: #333; }
+          h1 { border-bottom: 2px solid #2563EB; padding-bottom: 0.5rem; }
+          h2 { color: #2563EB; margin-top: 2rem; }
+          code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+          .endpoint { background: #fff; border: 1px solid #ddd; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+          .method { font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; margin-right: 0.5rem; color: #fff; }
+          .get { background: #10B981; } .post { background: #3B82F6; } .put { background: #F59E0B; } .delete { background: #EF4444; }
+        </style>
+      </head>
+      <body>
+        <h1>Educational Platform API Documentation</h1>
+        
+        <h2>Authentication</h2>
+        <div class="endpoint"><span class="method post">POST</span> <code>/api/auth/register</code> - Register new user</div>
+        <div class="endpoint"><span class="method post">POST</span> <code>/api/auth/login</code> - Login user</div>
+        <div class="endpoint"><span class="method get">GET</span> <code>/api/auth/me</code> - Get current user</div>
+        
+        <h2>Resources</h2>
+        <div class="endpoint"><span class="method post">POST</span> <code>/api/resources/upload</code> - Upload resource</div>
+        <div class="endpoint"><span class="method get">GET</span> <code>/api/resources</code> - Get all approved resources</div>
+        <div class="endpoint"><span class="method get">GET</span> <code>/api/resources/:id</code> - Get single resource</div>
+        <div class="endpoint"><span class="method get">GET</span> <code>/api/resources/:id/download</code> - Download resource</div>
+        
+        <h2>Admin</h2>
+        <div class="endpoint"><span class="method get">GET</span> <code>/api/admin/stats</code> - Get dashboard statistics</div>
+        <div class="endpoint"><span class="method get">GET</span> <code>/api/admin/resources/pending</code> - Get pending resources</div>
+        <div class="endpoint"><span class="method put">PUT</span> <code>/api/admin/resources/:id/approve</code> - Approve resource</div>
+        <div class="endpoint"><span class="method put">PUT</span> <code>/api/admin/resources/:id/reject</code> - Reject resource</div>
+        <div class="endpoint"><span class="method delete">DELETE</span> <code>/api/admin/users/:id</code> - Delete user</div>
+      </body>
+    </html>
+  `);
+});
+
 // Rate limiting - tuned for production
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

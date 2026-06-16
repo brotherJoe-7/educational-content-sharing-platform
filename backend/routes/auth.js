@@ -83,6 +83,10 @@ router.post('/login', [
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    if (user.status === 'suspended') {
+      return res.status(403).json({ message: 'Your account has been suspended. Please contact the administrator.' });
+    }
+
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {

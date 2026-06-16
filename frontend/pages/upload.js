@@ -113,7 +113,7 @@ export default function Upload() {
                 <div className="bg-blue-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl shrink-0">
                   <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <span className="text-base sm:text-xl font-bold text-gray-800">EduShare<span className="hidden sm:inline"> Sierra Leone</span></span>
+                <span className="text-base sm:text-xl font-bold text-gray-800">Open Content<span className="hidden sm:inline"> Sierra Leone</span></span>
               </Link>
             </div>
             <div className="flex items-center">

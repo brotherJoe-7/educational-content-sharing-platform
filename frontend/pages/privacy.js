@@ -12,7 +12,7 @@ export default function Privacy() {
               <Link href="/">
                 <BookOpen className="h-8 w-8 text-blue-600 cursor-pointer" />
               </Link>
-              <span className="ml-2 text-xl font-bold text-gray-800">EduShare Sierra Leone</span>
+              <span className="ml-2 text-xl font-bold text-gray-800">Open Content Sierra Leone</span>
             </div>
             <div className="flex items-center">
               <Link href="/" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium flex items-center">
@@ -39,7 +39,7 @@ export default function Privacy() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">1. Introduction</h2>
             <p className="text-gray-600 mb-4">
-              EduShare Sierra Leone ("we", "our", or "us") is committed to protecting your privacy. 
+              Open Content Sierra Leone ("we", "our", or "us") is committed to protecting your privacy. 
               This Privacy Policy explains how we collect, use, and safeguard your information when you use our educational content sharing platform.
             </p>
 
@@ -128,7 +128,7 @@ export default function Privacy() {
 
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mt-8">
               <p className="text-blue-800 font-medium">
-                By using EduShare Sierra Leone, you agree to this Privacy Policy and our Terms of Service.
+                By using Open Content Sierra Leone, you agree to this Privacy Policy and our Terms of Service.
               </p>
             </div>
           </div>

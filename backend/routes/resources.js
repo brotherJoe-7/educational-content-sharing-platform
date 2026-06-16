@@ -4,39 +4,49 @@ const { body, validationResult } = require('express-validator');
 const Resource = require('../models/Resource');
 const { protect } = require('../middleware/auth');
 const { storage, cloudinary } = require('../config/cloudinary');
+const unzipper = require('unzipper');
 
 const router = express.Router();
 
-const buildCloudinaryUrl = (resource) => {
-  if (!resource.cloudinaryPublicId) {
-    return resource.fileUrl;
-  }
+/**
+ * Get streamable info for a Cloudinary asset.
+ * Returns { url, isArchive } where isArchive=true means the URL
+ * is a zip (generate_archive) that must be extracted before streaming.
+ */
+const getCloudinaryStreamUrl = async (resource) => {
+  if (!resource.cloudinaryPublicId) return { url: resource.fileUrl, isArchive: false };
 
-  const resourceType = resource.resourceType || (['JPG', 'PNG'].includes(resource.fileType) ? 'image' : 'raw');
-  const format = resource.fileName?.split('.').pop();
-  const options = {
-    resource_type: resourceType,
-    secure: true
-  };
-  // Use signed URLs for raw/document files to allow authorized access
-  if (resourceType === 'raw' || ['PDF', 'DOC', 'DOCX', 'PPT', 'PPTX', 'TXT'].includes(resource.fileType)) {
-    options.sign_url = true;
-    options.type = 'authenticated';
-  }
-
-  if (format) options.format = format.toLowerCase();
+  const resourceType = resource.resourceType || 'raw';
 
   try {
-    if (options.sign_url) {
-      // Use private download URL helper for signed access to protected assets
-      return cloudinary.utils.private_download_url(resource.cloudinaryPublicId, { resource_type: resourceType, format: options.format });
+    // raw-type files work directly from CDN under strict delivery
+    if (resourceType === 'raw') {
+      const info = await cloudinary.api.resource(resource.cloudinaryPublicId, {
+        resource_type: 'raw',
+        type: 'upload'
+      });
+      return { url: info.secure_url, isArchive: false };
     }
-    return cloudinary.url(resource.cloudinaryPublicId, options);
-  } catch (error) {
-    console.error('Cloudinary URL build failed:', error);
-    return resource.fileUrl;
+
+    // image-type files (e.g., PDFs mis-typed at upload) are blocked by strict
+    // delivery CDN. Use generate_archive to get a short-lived download URL —
+    // the response will be a zip that we extract on the fly.
+    const archiveUrl = cloudinary.utils.download_archive_url({
+      public_ids: [resource.cloudinaryPublicId],
+      resource_type: resourceType,
+      target_format: 'zip',
+      flatten_folders: true,
+      use_original_filename: true,
+      async: false
+    });
+    return { url: archiveUrl, isArchive: true };
+  } catch (err) {
+    console.error('[Cloudinary] Lookup failed:', err.error?.message || err.message);
+    return { url: resource.fileUrl, isArchive: false };
   }
 };
+
+
 
 // Configure multer with Cloudinary storage
 const upload = multer({
@@ -163,11 +173,12 @@ router.get('/', async (req, res) => {
       Resource.countDocuments(filter)
     ]);
 
-    const resourcesWithUrls = resources.map((resource) => {
+    const resourcesWithUrls = await Promise.all(resources.map(async (resource) => {
       const doc = resource.toObject();
-      doc.fileUrl = buildCloudinaryUrl(resource);
+      const { url } = await getCloudinaryStreamUrl(resource);
+      doc.fileUrl = url;
       return doc;
-    });
+    }));
 
     const totalPages = Math.ceil(total / limitNum);
 
@@ -206,7 +217,9 @@ router.get('/:id', async (req, res) => {
     }
 
     const resourceData = resource.toObject();
-    resourceData.fileUrl = buildCloudinaryUrl(resource);
+    // getCloudinaryStreamUrl returns { url, isArchive }
+    const { url: fileUrl } = await getCloudinaryStreamUrl(resource);
+    resourceData.fileUrl = fileUrl;
 
     res.json({
       success: true,
@@ -218,29 +231,22 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Download resource (protected by backend, tracks downloads)
+// Download resource: increments counter then returns proxy URL
 router.get('/:id/download', async (req, res) => {
   try {
-    // Validate ObjectId format
     if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ message: 'Invalid resource ID format' });
     }
 
     const resource = await Resource.findById(req.params.id);
+    if (!resource) return res.status(404).json({ message: 'Resource not found' });
+    if (resource.status !== 'approved') return res.status(403).json({ message: 'Resource not approved' });
 
-    if (!resource) {
-      return res.status(404).json({ message: 'Resource not found' });
-    }
-
-    if (resource.status !== 'approved') {
-      return res.status(403).json({ message: 'Resource not approved' });
-    }
-
-    // Increment download count
+    // Increment download count here (single source of truth)
     resource.downloadCount += 1;
     await resource.save();
 
-    // Return a proxy download URL (server will stream the file)
+    // Return the proxy URL so the browser downloads via our server
     const proxyUrl = `${req.protocol}://${req.get('host')}/api/resources/${resource._id}/download/proxy`;
     res.json({
       success: true,
@@ -253,7 +259,7 @@ router.get('/:id/download', async (req, res) => {
   }
 });
 
-// Proxy download endpoint: streams file from Cloudinary via server (uses API credentials)
+// Proxy download: streams file from Cloudinary through our server
 router.get('/:id/download/proxy', async (req, res) => {
   try {
     if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
@@ -264,39 +270,57 @@ router.get('/:id/download/proxy', async (req, res) => {
     if (!resource) return res.status(404).json({ message: 'Resource not found' });
     if (resource.status !== 'approved') return res.status(403).json({ message: 'Resource not approved' });
 
-    // Increment download count
-    resource.downloadCount += 1;
-    await resource.save();
+    // getCloudinaryStreamUrl returns { url, isArchive }
+    const { url: streamUrl, isArchive } = await getCloudinaryStreamUrl(resource);
+    console.log(`[PROXY] Fetching (isArchive=${isArchive}): ${streamUrl.substring(0, 100)}...`);
 
-    const publicId = resource.cloudinaryPublicId;
-    const format = resource.fileName?.split('.').pop()?.toLowerCase();
-    const resourceType = resource.resourceType || (/\.(jpg|jpeg|png)$/i.test(resource.fileName) ? 'image' : 'raw');
-
-    // Build a private download URL and fetch it with API credentials
-    const downloadUrl = cloudinary.utils.private_download_url(publicId, { resource_type: resourceType, format });
-    const auth = Buffer.from(`${process.env.CLOUDINARY_API_KEY}:${process.env.CLOUDINARY_API_SECRET}`).toString('base64');
-
-    const upstream = await fetch(downloadUrl, { headers: { Authorization: `Basic ${auth}` } });
+    const upstream = await fetch(streamUrl);
     if (!upstream.ok) {
       const text = await upstream.text().catch(() => '');
-      console.error('Upstream fetch failed', upstream.status, text.substring(0, 200));
+      console.error(`[PROXY] Cloudinary returned ${upstream.status}:`, text.substring(0, 300));
       return res.status(502).json({ message: 'Failed to retrieve file from storage' });
     }
 
-    // Stream headers
-    const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
-    const contentLength = upstream.headers.get('content-length');
-    res.setHeader('Content-Type', contentType);
-    if (contentLength) res.setHeader('Content-Length', contentLength);
-    res.setHeader('Content-Disposition', `attachment; filename="${resource.fileName}"`);
+    const isInline = req.query.inline === 'true';
+    const disposition = isInline ? 'inline' : 'attachment';
+    res.setHeader('Content-Disposition', `${disposition}; filename="${resource.fileName}"`);
+    res.setHeader('Cache-Control', 'no-cache');
 
-    // Stream body
-    const body = upstream.body;
-    if (body && typeof body.pipe === 'function') {
-      body.pipe(res);
+    if (isInline) {
+      // Remove helmet security headers that block cross-origin (different port) framing
+      res.removeHeader('X-Frame-Options');
+      res.removeHeader('Content-Security-Policy');
+      res.removeHeader('Cross-Origin-Resource-Policy');
+    }
+
+    if (isArchive) {
+      // The response is a ZIP — convert Web stream → Node stream, then extract the first entry
+      res.setHeader('Content-Type', resource.fileName.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+      const { Readable } = require('stream');
+      const nodeReadable = Readable.fromWeb(upstream.body);
+      nodeReadable
+        .pipe(unzipper.Parse())
+        .on('entry', (entry) => {
+          entry.pipe(res);
+        })
+        .on('error', (err) => {
+          console.error('[PROXY] Unzip error:', err.message);
+          if (!res.headersSent) res.status(502).json({ message: 'Failed to extract file from archive' });
+        });
     } else {
-      const buffer = await upstream.arrayBuffer();
-      res.send(Buffer.from(buffer));
+      // Direct stream
+      const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+      const contentLength = upstream.headers.get('content-length');
+      res.setHeader('Content-Type', contentType);
+      if (contentLength) res.setHeader('Content-Length', contentLength);
+
+      const body = upstream.body;
+      if (body && typeof body.pipe === 'function') {
+        body.pipe(res);
+      } else {
+        const buffer = await upstream.arrayBuffer();
+        res.send(Buffer.from(buffer));
+      }
     }
   } catch (error) {
     console.error('Proxy download error:', error);

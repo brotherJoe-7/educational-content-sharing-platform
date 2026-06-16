@@ -25,6 +25,21 @@ router.get('/', async (req, res) => {
       ])
     ]);
 
+    // Get trending subjects based on highest download counts
+    const trendingSubjectsAgg = await Resource.aggregate([
+      { $match: { status: 'approved' } },
+      { $group: { _id: '$subject', totalDownloads: { $sum: '$downloadCount' } } },
+      { $sort: { totalDownloads: -1 } },
+      { $limit: 6 }
+    ]);
+    const trendingSubjects = trendingSubjectsAgg.map(s => s._id);
+
+    // Get a few recent resources to show on the homepage
+    const recentResources = await Resource.find({ status: 'approved' })
+      .populate('uploadedBy', 'name')
+      .sort({ createdAt: -1 })
+      .limit(3);
+
     res.json({
       success: true,
       stats: {
@@ -34,7 +49,9 @@ router.get('/', async (req, res) => {
         averageRating: avgRatingAgg[0]?.avg
           ? parseFloat(avgRatingAgg[0].avg.toFixed(1))
           : null,
-      }
+      },
+      trendingSubjects,
+      recentResources
     });
   } catch (error) {
     console.error('Public stats error:', error);

@@ -20,6 +20,7 @@ export default function Resources() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
+  const [ratingModal, setRatingModal] = useState({ isOpen: false, resourceId: null, rating: 0, comment: '' });
 
   useEffect(() => {
     fetchResources();
@@ -77,6 +78,45 @@ export default function Resources() {
     }
 
     setFilteredResources(filtered);
+  };
+
+  const handleRate = async () => {
+    if (!ratingModal.rating) {
+      toast.error('Please select a rating');
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login to rate');
+        router.push('/login');
+        return;
+      }
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/resources/${ratingModal.resourceId}/rating`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          rating: ratingModal.rating,
+          comment: ratingModal.comment
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Rating submitted successfully');
+        setRatingModal({ isOpen: false, resourceId: null, rating: 0, comment: '' });
+        fetchResources(); // Refresh resources
+      } else {
+        toast.error(data.message || 'Failed to submit rating');
+      }
+    } catch (error) {
+      toast.error('Failed to submit rating');
+    }
   };
 
   const handleDownload = async (id, title) => {
@@ -180,16 +220,13 @@ export default function Resources() {
         </div>
         <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
           <div className="flex space-x-2 w-full">
-            <a
-              href={resource.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Read ${resource.title}`}
+            <Link
+              href={`/resources/${resource._id}`}
               className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors border border-blue-100"
             >
               <BookOpen className="h-4 w-4" aria-hidden="true" />
               <span>Read</span>
-            </a>
+            </Link>
             <button
               onClick={() => handleDownload(resource._id, resource.title)}
               aria-label={`Download ${resource.title}`}
@@ -199,6 +236,14 @@ export default function Resources() {
               <span>Download</span>
             </button>
           </div>
+          <button
+            onClick={() => setRatingModal({ isOpen: true, resourceId: resource._id, rating: 0, comment: '' })}
+            aria-label={`Rate ${resource.title}`}
+            className="p-2 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors border border-transparent hover:border-yellow-100 shrink-0"
+            title="Rate"
+          >
+            <Star className="h-4 w-4" aria-hidden="true" />
+          </button>
           <button
             onClick={() => handleShare(resource)}
             aria-label={`Share ${resource.title}`}
@@ -249,12 +294,26 @@ export default function Resources() {
           </div>
         </div>
         <div className="flex lg:flex-col gap-2">
+          <Link
+            href={`/resources/${resource._id}`}
+            className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-50 text-blue-700 border border-blue-100 rounded-xl hover:bg-blue-100 transition-all shadow-sm"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Read / View</span>
+          </Link>
           <button
             onClick={() => handleDownload(resource._id, resource.fileName)}
             className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md"
           >
             <Download className="h-4 w-4" />
             <span>Download</span>
+          </button>
+          <button
+            onClick={() => setRatingModal({ isOpen: true, resourceId: resource._id, rating: 0, comment: '' })}
+            className="flex items-center justify-center space-x-2 px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl hover:bg-yellow-200 transition-colors"
+          >
+            <Star className="h-4 w-4" />
+            <span>Rate</span>
           </button>
           <button
             onClick={() => handleShare(resource)}
@@ -279,7 +338,7 @@ export default function Resources() {
                 <div className="bg-blue-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl shrink-0">
                   <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <span className="text-base sm:text-xl font-bold text-gray-800">EduShare<span className="hidden sm:inline"> Sierra Leone</span></span>
+                <span className="text-base sm:text-xl font-bold text-gray-800">Open Content<span className="hidden sm:inline"> Sierra Leone</span></span>
               </Link>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
@@ -458,6 +517,55 @@ export default function Resources() {
             >
               Clear filters
             </button>
+          </div>
+        )}
+
+        {/* Rating Modal */}
+        {ratingModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Rate Resource</h3>
+              
+              <div className="flex justify-center space-x-2 mb-6">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRatingModal({ ...ratingModal, rating: star })}
+                    className="focus:outline-none"
+                  >
+                    <Star 
+                      className={`h-10 w-10 ${ratingModal.rating >= star ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                    />
+                  </button>
+                ))}
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Comment (Optional)</label>
+                <textarea
+                  value={ratingModal.comment}
+                  onChange={(e) => setRatingModal({ ...ratingModal, comment: e.target.value })}
+                  rows="3"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="Share your thoughts about this resource..."
+                ></textarea>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setRatingModal({ isOpen: false, resourceId: null, rating: 0, comment: '' })}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRate}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition-colors"
+                >
+                  Submit Rating
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

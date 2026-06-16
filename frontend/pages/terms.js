@@ -12,7 +12,7 @@ export default function Terms() {
               <Link href="/">
                 <BookOpen className="h-8 w-8 text-blue-600 cursor-pointer" />
               </Link>
-              <span className="ml-2 text-xl font-bold text-gray-800">EduShare Sierra Leone</span>
+              <span className="ml-2 text-xl font-bold text-gray-800">Open Content Sierra Leone</span>
             </div>
             <div className="flex items-center">
               <Link href="/" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium flex items-center">
@@ -39,14 +39,14 @@ export default function Terms() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">1. Acceptance of Terms</h2>
             <p className="text-gray-600 mb-4">
-              By accessing and using EduShare Sierra Leone, you agree to be bound by these Terms of Use. 
+              By accessing and using Open Content Sierra Leone, you agree to be bound by these Terms of Use. 
               If you do not agree to these terms, please do not use this platform.
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">2. Eligibility</h2>
             <p className="text-gray-600 mb-4">
               You must be at least 13 years old to use this platform. By using this platform, you represent 
-              that you are of legal age to form a binding contract with EduShare Sierra Leone.
+              that you are of legal age to form a binding contract with Open Content Sierra Leone.
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">3. User Accounts</h2>
@@ -71,14 +71,14 @@ export default function Terms() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">5. Content Moderation</h2>
             <p className="text-gray-600 mb-4">
-              All uploaded content is subject to moderation before publication. EduShare Sierra Leone reserves 
+              All uploaded content is subject to moderation before publication. Open Content Sierra Leone reserves 
               the right to approve, reject, or remove any content that violates these terms or is deemed 
               inappropriate. Users whose content is repeatedly rejected may have their accounts suspended.
             </p>
 
             <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">6. Intellectual Property</h2>
             <p className="text-gray-600 mb-4">
-              Users retain ownership of content they upload. By uploading content, users grant EduShare Sierra 
+              Users retain ownership of content they upload. By uploading content, users grant Open Content Sierra 
               Leone a non-exclusive, worldwide, royalty-free license to use, display, and distribute the content 
               for educational purposes. Users must ensure they have the right to upload and share the content.
             </p>
@@ -111,7 +111,7 @@ export default function Terms() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">10. Limitation of Liability</h2>
             <p className="text-gray-600 mb-4">
-              EduShare Sierra Leone shall not be liable for any indirect, incidental, special, or consequential 
+              Open Content Sierra Leone shall not be liable for any indirect, incidental, special, or consequential 
               damages arising from the use or inability to use the platform.
             </p>
 
@@ -146,7 +146,7 @@ export default function Terms() {
 
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mt-8">
               <p className="text-blue-800 font-medium">
-                By using EduShare Sierra Leone, you agree to these Terms of Use and our Privacy Policy.
+                By using Open Content Sierra Leone, you agree to these Terms of Use and our Privacy Policy.
               </p>
             </div>
           </div>

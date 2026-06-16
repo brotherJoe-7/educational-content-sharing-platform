@@ -1,4 +1,4 @@
-# Contributing to EduShare Sierra Leone
+# Contributing to Open Content Sierra Leone
 
 Thank you for your interest in contributing to the Educational Content Sharing Platform! This document provides guidelines for contributors.
 
@@ -170,4 +170,4 @@ Contributors will be acknowledged in:
 - Release notes
 - Project documentation
 
-Thank you for contributing to EduShare Sierra Leone! 🎓
+Thank you for contributing to Open Content Sierra Leone! 🎓
