@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { ArrowLeft, Download, Star, Share2, FileText, UserIcon, Clock, Maximize, Minimize, X } from 'lucide-react';
+import { ArrowLeft, Download, Star, Share2, FileText, UserIcon, Clock, Maximize, Minimize, X, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -275,19 +275,21 @@ export default function ResourceDetails() {
           </div>
           <div className={`${isFullscreen ? 'flex-1 w-full h-full' : 'h-[600px] w-full'} bg-gray-100 relative`}>
             {['pdf'].includes(resource.fileType?.toLowerCase()) ? (
-              isMobile && resource?.fileUrl ? (
-                <div className="w-full h-full relative">
-                  <iframe
-                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(resource.fileUrl)}&embedded=true`}
-                    className="w-full h-full border-0 absolute inset-0"
-                    title={resource.title}
-                  />
-                  <div className="absolute top-4 right-4 z-10">
-                    <a href={inlineViewUrl} target="_blank" rel="noopener noreferrer"
-                       className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-md">
-                      <Share2 className="h-4 w-4" /><span>Open Native Viewer</span>
-                    </a>
+              isMobile ? (
+                <div className="flex flex-col items-center justify-center h-full bg-white px-6 text-center space-y-5">
+                  <div className="bg-blue-50 p-4 rounded-full">
+                    <FileText className="h-12 w-12 text-blue-600" />
                   </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Mobile Reading Mode</h3>
+                    <p className="text-gray-500 max-w-sm mx-auto">
+                      For the best reading experience on your phone, open the document in your native PDF viewer.
+                    </p>
+                  </div>
+                  <a href={inlineViewUrl} target="_blank" rel="noopener noreferrer"
+                     className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md transition-transform active:scale-95">
+                    <BookOpen className="h-5 w-5" /><span>Read Document</span>
+                  </a>
                 </div>
               ) : pdfLoading ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-3">
