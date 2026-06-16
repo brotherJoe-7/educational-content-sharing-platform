@@ -194,7 +194,7 @@ export default function ResourceDetails() {
               <FileText className="h-5 w-5 mr-2 text-gray-500"/>
               {isFullscreen ? resource.title : 'Document Preview'}
             </h3>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               {!isFullscreen && (
                 ['pdf', 'txt', 'png', 'jpg', 'jpeg'].includes(resource.fileType?.toLowerCase()) ? (
                   <span className="hidden sm:inline-flex text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-full border border-green-200">Preview Available</span>
@@ -202,6 +202,16 @@ export default function ResourceDetails() {
                   <span className="hidden sm:inline-flex text-sm text-yellow-600 font-medium bg-yellow-50 px-3 py-1 rounded-full border border-yellow-200">Preview may be limited</span>
                 )
               )}
+              {/* Open in new tab button as reliable fallback */}
+              <a
+                href={inlineViewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Open in Tab</span>
+              </a>
               {isFullscreen ? (
                 <>
                   <button 
@@ -228,12 +238,37 @@ export default function ResourceDetails() {
             </div>
           </div>
           <div className={`${isFullscreen ? 'flex-1 w-full h-full' : 'h-[600px] w-full'} bg-gray-100 relative`}>
-            {/* Iframe to display the PDF or image inline */}
-            <iframe 
-              src={inlineViewUrl} 
-              className="w-full h-full border-0" 
-              title="Resource Preview"
-            />
+            {/* Use <object> for best cross-browser PDF support, iframe as fallback */}
+            {['pdf'].includes(resource.fileType?.toLowerCase()) ? (
+              <object
+                data={inlineViewUrl}
+                type="application/pdf"
+                className="w-full h-full border-0"
+              >
+                {/* Fallback if browser can't render PDF natively */}
+                <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
+                  <FileText className="h-16 w-16 text-gray-300" />
+                  <p className="text-lg font-medium">Your browser cannot preview this PDF inline.</p>
+                  <a
+                    href={inlineViewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    <Share2 className="h-5 w-5" />
+                    <span>Open PDF in New Tab</span>
+                  </a>
+                </div>
+              </object>
+            ) : (['png', 'jpg', 'jpeg'].includes(resource.fileType?.toLowerCase()) ? (
+              <img src={inlineViewUrl} alt={resource.title} className="w-full h-full object-contain" />
+            ) : (
+              <iframe 
+                src={inlineViewUrl} 
+                className="w-full h-full border-0" 
+                title="Resource Preview"
+              />
+            ))}
           </div>
         </div>
 
