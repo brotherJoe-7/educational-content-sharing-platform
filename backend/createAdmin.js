@@ -13,7 +13,11 @@ const createAdmin = async () => {
 
     // Admin credentials
     const adminEmail = 'admin@educonnectsl.org';
-    const adminPassword = 'AdminPassword2026!'; // Default secure password
+    const adminPassword = process.env.ADMIN_PASSWORD; // Retrieve from environment
+
+    if (!adminPassword) {
+      throw new Error('ADMIN_PASSWORD environment variable is not set.');
+    }
 
     // Check if admin already exists
     let adminUser = await User.findOne({ email: adminEmail });
@@ -41,7 +45,7 @@ const createAdmin = async () => {
 
     console.log('\n--- ADMIN CREDENTIALS ---');
     console.log(`Email: ${adminEmail}`);
-    console.log(`Password: ${adminPassword}`);
+    console.log('Password: [REDACTED]');
     console.log('-------------------------\n');
 
   } catch (error) {
